@@ -4,7 +4,7 @@ using RestSharp;
 
 namespace HashtagHelp.Services.Implementations.BulkScrapper
 {
-    public class APIRequestService<T>
+    public class BulkScrapperAPIRequestService<T>
     {
         public async Task<List<T>> GetObjectsBulkAPIAsync(string apiKey, string nickName)
         {

@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 
 namespace HashtagHelp.Services.Implementations.InstagramData
 {
-    public class InstagramDataRequestService<T>
+    public class InstagramDataAPIRequestService<T>
     {
         public async Task<List<T>> GetObjectsBulkAPIAsync(string apiKey, string nickName)
         {

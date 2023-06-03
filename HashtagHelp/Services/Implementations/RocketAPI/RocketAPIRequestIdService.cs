@@ -5,9 +5,9 @@ using System.Net.Http.Headers;
 
 namespace HashtagHelp.Services.Implementations.InstagramData
 {
-    public class InstagramDataRequestService<T>
+    public class RocketAPIRequestIdService<T>
     {
-        public async Task<List<T>> GetObjectsBulkAPIAsync(string apiKey, string nickName)
+        public async Task<List<T>> GetObjectsAPIAsync(string apiKey, string nickName)
         {
             var client = new HttpClient();
             var request = new HttpRequestMessage
@@ -15,10 +15,10 @@ namespace HashtagHelp.Services.Implementations.InstagramData
                 Method = HttpMethod.Get,
                 RequestUri = new Uri($"https://instagram-data1.p.rapidapi.com/followers?username={nickName}"),
                 Headers =
-                {
-                    { "X-RapidAPI-Key", apiKey },
-                    { "X-RapidAPI-Host", "instagram-data1.p.rapidapi.com" },
-                },
+    {
+        { "X-RapidAPI-Key", apiKey },
+        { "X-RapidAPI-Host", "instagram-data1.p.rapidapi.com" },
+    },
             };
 
             HttpResponseMessage response;

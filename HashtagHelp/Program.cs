@@ -18,7 +18,7 @@ if (connectionString != null)
     });
 
 builder.Services.AddScoped<IFunnelCreatorService, FunnelCreatorService>();
-builder.Services.AddScoped<IFollowersGetterService, InstagramDataFollowersGetterService>();
+builder.Services.AddScoped<IFollowersGetterService, RocketAPIFollowersGetterService>();
 builder.Services.AddScoped<IFollowingTagsGetterService, FollowingTagsGetterService>();
 
 builder.Services.AddEndpointsApiExplorer();
