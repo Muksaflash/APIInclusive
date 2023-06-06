@@ -9,12 +9,12 @@ namespace HashtagHelp.Services.Implementations
     {
         public async Task CreateFunnelAsync(ResearchedUserEntity researchedUser)
         {
+            await researchedUser.GetIdAsync();
             await researchedUser.GetFollowersAsync();
             // Реализуйте необходимую логику, связанную с созданием воронки
             Console.WriteLine("Funnel created for Researched User: " + researchedUser.Id);
             // Выполните необходимые операции
             await Task.CompletedTask;
-
         }
     }
 }

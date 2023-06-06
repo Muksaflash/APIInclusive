@@ -10,6 +10,8 @@ namespace HashtagHelp.Controllers
     [ApiController]
     public class ResearchedUserController : ControllerBase
     {
+        private readonly IIdGetterService _idGetterService;
+
         private readonly IFollowingTagsGetterService _followingTagsGetterService;
 
         private readonly IFunnelCreatorService _funnelCreatorService;
@@ -18,15 +20,15 @@ namespace HashtagHelp.Controllers
 
         private readonly AppDbContext _context;
 
-        public ResearchedUserController(AppDbContext context, 
-            IFunnelCreatorService funnelCreatedService, 
-            IFollowersGetterService followersGetterService, 
-            IFollowingTagsGetterService followingTagsGetterService)
+        public ResearchedUserController(AppDbContext context, IFunnelCreatorService funnelCreatedService, 
+            IFollowersGetterService followersGetterService, IFollowingTagsGetterService followingTagsGetterService, 
+            IIdGetterService idGetterService)
         {
             _context = context;
             _funnelCreatorService = funnelCreatedService;
             _followersGetterService = followersGetterService;
             _followingTagsGetterService = followingTagsGetterService;
+            _idGetterService = idGetterService;
         }
 
         [HttpGet]
@@ -64,6 +66,7 @@ namespace HashtagHelp.Controllers
                 return Problem("Entity set 'AppDbContext.ResearchedUsers'  is null.");
 
             researchedUser.FollowersGetter = _followersGetterService;
+            researchedUser.IdGetter = _idGetterService;
             _context.ResearchedUsers.Add(researchedUser);
             _followersGetterService.FollowingTagsGetter = _followingTagsGetterService;
             await _context.SaveChangesAsync(); 

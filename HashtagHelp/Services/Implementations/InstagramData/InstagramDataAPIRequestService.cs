@@ -1,13 +1,11 @@
 ﻿using HashtagHelp.Domain.ResponseModels.InstagramData;
 using Newtonsoft.Json;
-using RestSharp;
-using System.Net.Http.Headers;
 
 namespace HashtagHelp.Services.Implementations.InstagramData
 {
-    public class InstagramDataRequestService<T>
+    public class InstagramDataApiRequestService<T>
     {
-        public async Task<List<T>> GetObjectsBulkAPIAsync(string apiKey, string nickName)
+        public async Task<List<T>> GetObjectsAPIAsync(string apiKey, string nickName)
         {
             var client = new HttpClient();
             var request = new HttpRequestMessage

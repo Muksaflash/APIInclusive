@@ -6,6 +6,6 @@ namespace HashtagHelp.Services.Interfaces
     {
         public IFollowingTagsGetterService? FollowingTagsGetter { get; set; }
 
-        public Task<List<FollowerEntity>> GetFollowersByNameAsync(string nickName);
+        public Task<List<FollowerEntity>> GetFollowersByNameAsync(ResearchedUserEntity researchedUser);
     }
 }

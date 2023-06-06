@@ -1,5 +1,4 @@
 ﻿using HashtagHelp.Services.Interfaces;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HashtagHelp.Domain.Models
@@ -9,6 +8,10 @@ namespace HashtagHelp.Domain.Models
         [NotMapped]
         [NonSerialized]
         public IFollowersGetterService? FollowersGetter;
+
+        [NotMapped]
+        [NonSerialized]
+        public IIdGetterService? IdGetter;
 
         public uint FollowersNumber { get; set; }
 
@@ -21,8 +24,13 @@ namespace HashtagHelp.Domain.Models
         public async Task GetFollowersAsync()
         {
             if (FollowersGetter == null) throw new NullReferenceException();
-            Followers = await FollowersGetter.GetFollowersByNameAsync(NickName);
+            Followers = await FollowersGetter.GetFollowersByNameAsync(this);
             await Task.CompletedTask;
+        }
+        public async Task GetIdAsync()
+        {
+            if (IdGetter == null) throw new NullReferenceException();
+            InstagramId = await IdGetter.GetIdAsync(this);
         }
     }
 }
