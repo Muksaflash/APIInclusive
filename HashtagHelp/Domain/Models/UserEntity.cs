@@ -8,7 +8,7 @@ namespace HashtagHelp.Domain.Models
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        public uint InstagramId { get; set; }
+        public string InstagramId { get; set; } = string.Empty;
 
         public string NickName { get; set; } = string.Empty;
     }

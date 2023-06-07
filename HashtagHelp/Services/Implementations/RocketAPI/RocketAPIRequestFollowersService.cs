@@ -1,5 +1,5 @@
-﻿using HashtagHelp.Domain.ResponseModels.BulkSkrapper;
-using HashtagHelp.Domain.ResponseModels.RocketAPI;
+﻿using HashtagHelp.Domain.ExternalApiModels.BulkSkrapper;
+using HashtagHelp.Domain.ExternalApiModels.RocketAPI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NuGet.Packaging;

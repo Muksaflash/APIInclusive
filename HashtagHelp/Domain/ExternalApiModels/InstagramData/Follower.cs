@@ -1,4 +1,4 @@
-﻿namespace HashtagHelp.Domain.ResponseModels.InstagramData
+﻿namespace HashtagHelp.Domain.ExternalApiModels.InstagramData
 {
     public class Follower
     {

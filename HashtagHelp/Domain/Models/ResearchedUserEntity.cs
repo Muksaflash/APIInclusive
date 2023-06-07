@@ -15,6 +15,8 @@ namespace HashtagHelp.Domain.Models
 
         public uint FollowersNumber { get; set; }
 
+        //[NotMapped]
+        //[NonSerialized]
         //public Dictionary<HashtagEntity, uint> FollowersTagFreq { get; set; } = new Dictionary<HashtagEntity, uint>();
 
         public List<FollowerEntity> Followers { get; set; } = new List<FollowerEntity>();

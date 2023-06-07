@@ -1,5 +1,5 @@
 ﻿using HashtagHelp.Domain.Models;
-using HashtagHelp.Domain.ResponseModels.InstagramData;
+using HashtagHelp.Domain.ExternalApiModels.InstagramData;
 using HashtagHelp.Services.Interfaces;
 
 namespace HashtagHelp.Services.Implementations.InstagramData
@@ -15,7 +15,7 @@ namespace HashtagHelp.Services.Implementations.InstagramData
             var followers = await APIRequestService.GetObjectsAPIAsync(apiKey, researchedUser.NickName);
             var resultFollowers = followers.Select(follower => new FollowerEntity()
             {
-                InstagramId = uint.Parse(follower.Id),
+                InstagramId = follower.Id,
                 ResearchedUserNickName = researchedUser.NickName,
                 NickName = follower.Username,
                 FollowingTagsGetter = FollowingTagsGetter

@@ -4,6 +4,6 @@ namespace HashtagHelp.Services.Interfaces
 {
     public interface IIdGetterService
     {
-        public Task<uint> GetIdAsync(ResearchedUserEntity researchedUser);
+        public Task<string> GetIdAsync(ResearchedUserEntity researchedUser);
     }
 }

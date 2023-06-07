@@ -3,6 +3,7 @@ using HashtagHelp.Domain.Models;
 using HashtagHelp.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using HashtagHelp.Domain.RequestModels;
 
 namespace HashtagHelp.Controllers
 {
@@ -20,8 +21,8 @@ namespace HashtagHelp.Controllers
 
         private readonly AppDbContext _context;
 
-        public ResearchedUserController(AppDbContext context, IFunnelCreatorService funnelCreatedService, 
-            IFollowersGetterService followersGetterService, IFollowingTagsGetterService followingTagsGetterService, 
+        public ResearchedUserController(AppDbContext context, IFunnelCreatorService funnelCreatedService,
+            IFollowersGetterService followersGetterService, IFollowingTagsGetterService followingTagsGetterService,
             IIdGetterService idGetterService)
         {
             _context = context;
@@ -59,21 +60,26 @@ namespace HashtagHelp.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ResearchedUserEntity>> PostResearchedUser(
-            ResearchedUserEntity researchedUser)
+        public async Task<ActionResult<ResearchedUserEntity>> PostResearchedUser([FromBody] UserRequestModel requestData)
         {
             if (_context.ResearchedUsers == null)
-                return Problem("Entity set 'AppDbContext.ResearchedUsers'  is null.");
+                return Problem("Entity set 'AppDbContext.ResearchedUsers' is null.");
 
-            researchedUser.FollowersGetter = _followersGetterService;
-            researchedUser.IdGetter = _idGetterService;
+            var nickName = requestData.NickName;
+            if (string.IsNullOrEmpty(nickName))
+                return BadRequest("Invalid request data.");
+            var researchedUser = new ResearchedUserEntity
+            {
+                NickName = nickName,
+                FollowersGetter = _followersGetterService,
+                IdGetter = _idGetterService
+            };
             _context.ResearchedUsers.Add(researchedUser);
             _followersGetterService.FollowingTagsGetter = _followingTagsGetterService;
-            await _context.SaveChangesAsync(); 
+            await _context.SaveChangesAsync();
             await _funnelCreatorService.CreateFunnelAsync(researchedUser);
-
-            return CreatedAtAction(nameof(GetResearchedUser), 
+            return CreatedAtAction(nameof(GetResearchedUser),
                 new { id = researchedUser.Id }, researchedUser);
         }
-    } 
+    }
 }

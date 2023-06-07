@@ -1,5 +1,5 @@
 ﻿using HashtagHelp.Domain.Models;
-using HashtagHelp.Domain.ResponseModels.BulkSkrapper;
+using HashtagHelp.Domain.ExternalApiModels.BulkSkrapper;
 using HashtagHelp.Services.Interfaces;
 
 namespace HashtagHelp.Services.Implementations.BulkScrapper
@@ -15,7 +15,7 @@ namespace HashtagHelp.Services.Implementations.BulkScrapper
             var followers = await apiRequestService.GetObjectsBulkAPIAsync(apiKey, researchedUser.NickName);
             var resultFollowers = followers.Select(follower => new FollowerEntity()
             {
-                InstagramId = (uint)follower.Pk,
+                InstagramId = follower.Pk.ToString(),
                 ResearchedUserNickName = researchedUser.NickName,
                 NickName = follower.Username,
                 FollowingTagsGetter = FollowingTagsGetter

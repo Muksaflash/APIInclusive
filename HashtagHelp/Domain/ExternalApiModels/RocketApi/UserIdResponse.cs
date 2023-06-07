@@ -1,4 +1,4 @@
-﻿namespace HashtagHelp.Domain.ResponseModels.RocketAPI
+﻿namespace HashtagHelp.Domain.ExternalApiModels.RocketAPI
 {
     public class UserIdResponse
     {

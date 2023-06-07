@@ -8,15 +8,15 @@ namespace HashtagHelp.Domain.Models
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        public uint MinTagMediaCount { get; set; }
+        public long MinTagMediaCount { get; set; }
 
-        public uint MaxTagMediaCount { get; set; }
+        public long MaxTagMediaCount { get; set; }
 
-        public uint MinFollowersTagFreq { get; set; }
+        public long MinFollowersTagFreq { get; set; }
 
-        public uint MinMediaCountInterval { get; set; }
+        public long MinMediaCountInterval { get; set; }
 
-        public uint HashtagsNumber { get; set; }
+        public long HashtagsNumber { get; set; }
 
         public List<HashtagEntity> FilteredHashtag { get; set; } = new List<HashtagEntity>();
 

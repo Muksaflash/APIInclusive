@@ -1,4 +1,4 @@
-﻿namespace HashtagHelp.Domain.ResponseModels.BulkSkrapper
+﻿namespace HashtagHelp.Domain.ExternalApiModels.BulkSkrapper
 {
     public class DataResponce<T>
     {

@@ -1,4 +1,4 @@
-﻿using HashtagHelp.Domain.ResponseModels.BulkSkrapper;
+﻿using HashtagHelp.Domain.ExternalApiModels.BulkSkrapper;
 using Newtonsoft.Json;
 using RestSharp;
 

@@ -1,4 +1,4 @@
-﻿using HashtagHelp.Domain.ResponseModels.InstagramData;
+﻿using HashtagHelp.Domain.ExternalApiModels.InstagramData;
 using Newtonsoft.Json;
 
 namespace HashtagHelp.Services.Implementations.InstagramData
