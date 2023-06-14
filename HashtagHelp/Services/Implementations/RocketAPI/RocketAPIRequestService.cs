@@ -1,11 +1,7 @@
-﻿using HashtagHelp.Domain.ExternalApiModels.BulkSkrapper;
-using HashtagHelp.Domain.ExternalApiModels.RocketAPI;
+﻿using HashtagHelp.Domain.ExternalApiModels.RocketAPI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NuGet.Packaging;
-using RestSharp;
 using System.Net.Http.Headers;
-using System.Reflection.PortableExecutable;
 using System.Text;
 
 namespace HashtagHelp.Services.Implementations.RocketAPI

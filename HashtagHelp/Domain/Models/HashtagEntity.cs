@@ -2,8 +2,12 @@
 {
     public class HashtagEntity
     {
-        public string Name { get; set; } = string.Empty;
         public Guid Id { get; set; } = Guid.NewGuid();
+
+        public string Name { get; set; } = string.Empty;
+
+        public string InstagramId { get; set; } = string.Empty;
+
         public long MediaCount { get; set; }
     }
 }

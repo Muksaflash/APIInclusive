@@ -2,7 +2,7 @@
 {
     public class RootObject<T>
     {
-        public string Status { get; set; }
-        public Response<T> Response { get; set; }
+        public string? Status { get; set; }
+        public Response<T>? Response { get; set; }
     }
 }

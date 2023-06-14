@@ -4,7 +4,7 @@ using HashtagHelp.Services.Interfaces;
 
 namespace HashtagHelp.Services.Implementations.RocketAPI
 {
-    public class IdGetterService : IIdGetterService
+    public class RocketAPIIdGetterService : IIdGetterService
     {
         public async Task<string> GetIdAsync(ResearchedUserEntity researchedUser)
         {

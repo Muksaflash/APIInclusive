@@ -14,11 +14,11 @@ namespace HashtagHelp.Services.Implementations.InstagramData
             
             RocketAPIRequestService<User> APIRequestService = new RocketAPIRequestService<User>();
             //var UserId = await APIRequestService.GetIdAPIAsync(apiKey, researchedUser.NickName);
-            var userId = researchedUser.InstagramId.ToString();
+            var userId = researchedUser.SocialId.ToString();
             var followers = await APIRequestService.GetObjectsAPIAsync(apiKey, userId);
             var resultFollowers = followers.Select(follower => new FollowerEntity()
             {
-                InstagramId = follower.Pk,
+                SocialId = follower.Pk,
                 ResearchedUserNickName = researchedUser.NickName,
                 NickName = follower.Username,
                 FollowingTagsGetter = FollowingTagsGetter

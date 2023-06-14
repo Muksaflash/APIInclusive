@@ -11,11 +11,11 @@ namespace HashtagHelp.Services.Implementations.InstagramData
         {
             // Логика получения объектов FollowerEntity по nickName из базы данных или другого источника данных
             var apiKey = "a8f3f7e68amsh2703987539fa87cp17165ajsn6d5c6feed1e9";
-            InstagramDataApiRequestService<Follower> APIRequestService = new InstagramDataApiRequestService<Follower>();
+            InstagramDataApiRequestService<Follower> APIRequestService = new();
             var followers = await APIRequestService.GetObjectsAPIAsync(apiKey, researchedUser.NickName);
             var resultFollowers = followers.Select(follower => new FollowerEntity()
             {
-                InstagramId = follower.Id,
+                SocialId = follower.Id,
                 ResearchedUserNickName = researchedUser.NickName,
                 NickName = follower.Username,
                 FollowingTagsGetter = FollowingTagsGetter

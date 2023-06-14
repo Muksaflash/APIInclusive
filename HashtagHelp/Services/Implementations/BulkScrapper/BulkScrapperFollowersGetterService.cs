@@ -15,7 +15,7 @@ namespace HashtagHelp.Services.Implementations.BulkScrapper
             var followers = await apiRequestService.GetObjectsBulkAPIAsync(apiKey, researchedUser.NickName);
             var resultFollowers = followers.Select(follower => new FollowerEntity()
             {
-                InstagramId = follower.Pk.ToString(),
+                SocialId = follower.Pk.ToString(),
                 ResearchedUserNickName = researchedUser.NickName,
                 NickName = follower.Username,
                 FollowingTagsGetter = FollowingTagsGetter

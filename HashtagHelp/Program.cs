@@ -1,7 +1,9 @@
 using HashtagHelp.DAL;
 using HashtagHelp.Services.Implementations;
 using HashtagHelp.Services.Implementations.InstagramData;
+using HashtagHelp.Services.Implementations.InstData2;
 using HashtagHelp.Services.Implementations.RocketAPI;
+using HashtagHelp.Services.Implementations.InstaParser;
 using HashtagHelp.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,10 +20,11 @@ if (connectionString != null)
         options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
     });
 
-builder.Services.AddScoped<IFunnelCreatorService, FunnelCreatorService>();
+builder.Services.AddScoped<IFunnelService, FollowersService>();
+builder.Services.AddScoped<IFollowersTaskService, InstaParserFollowersTaskService>();
 builder.Services.AddScoped<IFollowersGetterService, RocketAPIFollowersGetterService>();
-builder.Services.AddScoped<IFollowingTagsGetterService, FollowingTagsGetterService>();
-builder.Services.AddScoped<IIdGetterService, IdGetterService>();
+builder.Services.AddScoped<IFollowingTagsGetterService, InstData2FollowingTagsGetterService>();
+builder.Services.AddScoped<IIdGetterService, RocketAPIIdGetterService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

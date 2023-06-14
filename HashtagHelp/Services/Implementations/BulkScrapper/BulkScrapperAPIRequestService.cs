@@ -19,22 +19,22 @@ namespace HashtagHelp.Services.Implementations.BulkScrapper
 
             RestResponse response = await client.ExecuteAsync(request);
 
-            if (response.IsSuccessful)
+            if (response.IsSuccessful && response.Content != null)
             {
                 // Обработка успешного ответа и преобразование в список
                 var dataResponce = ProcessApiResponse(response.Content);
                 var objects = dataResponce.Data;
-                while (dataResponce.Cursor.MoreAvailable)
-                {
-                    nextMaxId = int.Parse(dataResponce.Cursor.NextMaxId);
-                    request.AddParameter("nextMaxId", nextMaxId.ToString());
-                    response = await client.ExecuteAsync(request);
-                    if (!response.IsSuccessful)
-                        throw new Exception("Error: " + response.ErrorMessage);
-                    dataResponce = ProcessApiResponse(response.Content);
-                    objects.AddRange(dataResponce.Data);
-                }
-                return objects;
+                    while (dataResponce.Cursor.MoreAvailable)
+                    {
+                        nextMaxId = int.Parse(dataResponce.Cursor.NextMaxId);
+                        request.AddParameter("nextMaxId", nextMaxId.ToString());
+                        response = await client.ExecuteAsync(request);
+                        if (!response.IsSuccessful)
+                            throw new Exception("Error: " + response.ErrorMessage);
+                        dataResponce = ProcessApiResponse(response.Content);
+                        objects.AddRange(dataResponce.Data);
+                    }
+                    return objects;
             }
             else
             {

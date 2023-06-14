@@ -16,5 +16,7 @@ namespace HashtagHelp.DAL
         public DbSet<HashtagEntity> Hashtags { get; set; } = null!;
         public DbSet<ResearchedUserEntity> ResearchedUsers { get; set; } = null!;
         public DbSet<FunnelEntity> Funnels { get; set; } = null!;
+        public DbSet<ParserTaskEntity> Tasks { get; set; } = null!;
+        public DbSet<TelegramUserEntity> TelegramUsers { get; set; } = null!;
     }
 }

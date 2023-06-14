@@ -4,6 +4,6 @@ namespace HashtagHelp.Services.Interfaces
 {
     public interface IFollowingTagsGetterService
     {
-        public List<FollowerEntity> GetFollowingTagsById(uint id);
+        public Task<List<HashtagEntity>> GetFollowingTagsByIdAsync(string id);
     }
 }

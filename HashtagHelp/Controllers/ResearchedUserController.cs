@@ -4,6 +4,7 @@ using HashtagHelp.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HashtagHelp.Domain.RequestModels;
+using HashtagHelp.Services.Implementations;
 
 namespace HashtagHelp.Controllers
 {
@@ -15,21 +16,27 @@ namespace HashtagHelp.Controllers
 
         private readonly IFollowingTagsGetterService _followingTagsGetterService;
 
-        private readonly IFunnelCreatorService _funnelCreatorService;
+        private readonly IFunnelService _funnelCreatorService;
 
         private readonly IFollowersGetterService _followersGetterService;
 
+        private readonly IFollowersTaskService _followersTaskService;
+
         private readonly AppDbContext _context;
 
-        public ResearchedUserController(AppDbContext context, IFunnelCreatorService funnelCreatedService,
+        private readonly IDataRepository _dataRepository;
+
+        public ResearchedUserController(AppDbContext context, IFunnelService funnelCreatedService,
             IFollowersGetterService followersGetterService, IFollowingTagsGetterService followingTagsGetterService,
-            IIdGetterService idGetterService)
+            IIdGetterService idGetterService, IFollowersTaskService followersTaskService, IDataRepository dataRepository)
         {
             _context = context;
             _funnelCreatorService = funnelCreatedService;
             _followersGetterService = followersGetterService;
             _followingTagsGetterService = followingTagsGetterService;
             _idGetterService = idGetterService;
+            _followersTaskService = followersTaskService;
+            _dataRepository = dataRepository;
         }
 
         [HttpGet]
@@ -68,18 +75,28 @@ namespace HashtagHelp.Controllers
             var nickName = requestData.NickName;
             if (string.IsNullOrEmpty(nickName))
                 return BadRequest("Invalid request data.");
-            var researchedUser = new ResearchedUserEntity
+            var telegramUser = new TelegramUserEntity
             {
-                NickName = nickName,
-                FollowersGetter = _followersGetterService,
-                IdGetter = _idGetterService
+                NickName = nickName
             };
-            _context.ResearchedUsers.Add(researchedUser);
+            var parserTask = new ParserTaskEntity();
+            foreach (var name in requestData.RequestNickNames)
+            {
+                parserTask.ResearchedUsers.Add(new ResearchedUserEntity 
+                { 
+                    NickName = name,
+                    FollowersGetter = _followersGetterService,
+                    IdGetter = _idGetterService
+                });
+            };
+            _dataRepository.AddTask(parserTask);
+            _dataRepository.AddTelegramUser(telegramUser);
             _followersGetterService.FollowingTagsGetter = _followingTagsGetterService;
-            await _context.SaveChangesAsync();
-            await _funnelCreatorService.CreateFunnelAsync(researchedUser);
+            _funnelCreatorService.followersTaskService = _followersTaskService;
+            await _dataRepository.SaveChangesAsync();
+            await _funnelCreatorService.AddFollowersTaskAsync(parserTask);
             return CreatedAtAction(nameof(GetResearchedUser),
-                new { id = researchedUser.Id }, researchedUser);
+                new { id = parserTask.Id }, parserTask);
         }
     }
 }

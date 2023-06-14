@@ -32,7 +32,8 @@ namespace HashtagHelp.Domain.Models
         public async Task GetIdAsync()
         {
             if (IdGetter == null) throw new NullReferenceException();
-            InstagramId = await IdGetter.GetIdAsync(this);
+            SocialId = await IdGetter.GetIdAsync(this);
+            await Task.CompletedTask;
         }
     }
 }
