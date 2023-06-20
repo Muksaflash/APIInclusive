@@ -20,7 +20,7 @@ namespace HashtagHelp.Controllers
 
         private readonly IFollowersGetterService _followersGetterService;
 
-        private readonly IFollowersTaskService _followersTaskService;
+        private readonly IApiRequestService _apiRequestService;
 
         private readonly AppDbContext _context;
 
@@ -28,15 +28,15 @@ namespace HashtagHelp.Controllers
 
         public ResearchedUserController(AppDbContext context, IFunnelService funnelCreatedService,
             IFollowersGetterService followersGetterService, IFollowingTagsGetterService followingTagsGetterService,
-            IIdGetterService idGetterService, IFollowersTaskService followersTaskService, IDataRepository dataRepository)
+            IIdGetterService idGetterService, IApiRequestService apiRequestService, IDataRepository dataRepository)
         {
             _context = context;
             _funnelCreatorService = funnelCreatedService;
             _followersGetterService = followersGetterService;
             _followingTagsGetterService = followingTagsGetterService;
             _idGetterService = idGetterService;
-            _followersTaskService = followersTaskService;
             _dataRepository = dataRepository;
+            _apiRequestService = apiRequestService;
         }
 
         [HttpGet]
@@ -89,10 +89,10 @@ namespace HashtagHelp.Controllers
                     IdGetter = _idGetterService
                 });
             };
+            _followersGetterService.FollowingTagsGetter = _followingTagsGetterService;
+            _funnelCreatorService.ApiRequestService = _apiRequestService;
             _dataRepository.AddTask(parserTask);
             _dataRepository.AddTelegramUser(telegramUser);
-            _followersGetterService.FollowingTagsGetter = _followingTagsGetterService;
-            _funnelCreatorService.followersTaskService = _followersTaskService;
             await _dataRepository.SaveChangesAsync();
             await _funnelCreatorService.AddFollowersTaskAsync(parserTask);
             return CreatedAtAction(nameof(GetResearchedUser),

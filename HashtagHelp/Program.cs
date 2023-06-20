@@ -20,11 +20,12 @@ if (connectionString != null)
         options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
     });
 
-builder.Services.AddScoped<IFunnelService, FollowersService>();
-builder.Services.AddScoped<IFollowersTaskService, InstaParserFollowersTaskService>();
+builder.Services.AddScoped<IFunnelService, FunnelService>();
+builder.Services.AddScoped<IApiRequestService, InstaParserAPIRequestService>();
 builder.Services.AddScoped<IFollowersGetterService, RocketAPIFollowersGetterService>();
 builder.Services.AddScoped<IFollowingTagsGetterService, InstData2FollowingTagsGetterService>();
 builder.Services.AddScoped<IIdGetterService, RocketAPIIdGetterService>();
+builder.Services.AddScoped<IDataRepository, DataRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

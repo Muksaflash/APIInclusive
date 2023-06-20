@@ -4,8 +4,10 @@ namespace HashtagHelp.Services.Interfaces
 {
     public interface IFunnelService
     {
-        public IFollowersTaskService followersTaskService { get; set; }
+        public IApiRequestService ApiRequestService { get; set; }
 
         Task AddFollowersTaskAsync(ParserTaskEntity parserTak);
+
+        //Task CheckFollowersTaskStatus(ParserTaskEntity parserTak);
     }
 }

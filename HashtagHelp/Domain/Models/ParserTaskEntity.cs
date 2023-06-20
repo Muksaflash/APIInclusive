@@ -3,7 +3,7 @@
     public class ParserTaskEntity
     {
         public Guid Id { get; set; } = Guid.NewGuid();
-        public string InParserId { get; set; }
+        public string InParserId { get; set; } = string.Empty;
         public List<ResearchedUserEntity> ResearchedUsers { get; set; } = new List<ResearchedUserEntity>();
     }
 }
