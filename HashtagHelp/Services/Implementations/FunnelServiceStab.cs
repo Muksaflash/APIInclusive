@@ -1,11 +1,10 @@
 ﻿using HashtagHelp.Domain.Models;
 using HashtagHelp.Services.Interfaces;
-using System;
 using System.Threading;
 
 namespace HashtagHelp.Services.Implementations
 {
-    public class FunnelService : IFunnelService
+    public class FunnelServiceStab : IFunnelService
     {
         public IApiRequestService ApiRequestService { get; set; }
         private Timer followersTimer;
@@ -18,10 +17,7 @@ namespace HashtagHelp.Services.Implementations
         public async Task AddFollowersTaskAsync(ParserTaskEntity parserTask)
         {
             _followersParserTask = parserTask;
-            var userNames = _followersParserTask.ResearchedUsers
-                .Select(researchedUser => researchedUser.NickName).ToList();
-            _followersParserTask.InParserId = await ApiRequestService
-                .AddFollowersTaskAPIAsync(apiKey, userNames);
+            _followersParserTask.InParserId = "";
             StartCheckingTimer(_followersParserTask, ref followersTimer, CheckFollowersTaskStatus);
             await Task.CompletedTask;
         }
@@ -51,17 +47,14 @@ namespace HashtagHelp.Services.Implementations
             try
             {
                 var taskStatus = await ApiRequestService.GetTaskStatusAsync(apiKey, parserTask.InParserId);
-                Console.WriteLine(taskStatus.tid_status);
+                Console.WriteLine(taskStatus.tid_status + " " + parserTask.InParserId + " "+ taskStatus.AddTime);
                 if (taskStatus.tid_status == "completed")
                 {
                     await followersTimer.DisposeAsync();
                     await AddFollowingTagsTaskAsync();
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
+            catch (Exception ex) { }
         }
 
         private async Task CheckFollowingTagsTaskStatus(ParserTaskEntity parserTask)
@@ -76,10 +69,7 @@ namespace HashtagHelp.Services.Implementations
                     Console.WriteLine("Акукарача");
                 }
             }
-            catch (Exception ex )
-            { 
-                Console.WriteLine(ex); 
-            }
+            catch (Exception ex) { }
         }
     }
 }
