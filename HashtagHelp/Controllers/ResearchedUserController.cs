@@ -4,7 +4,6 @@ using HashtagHelp.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HashtagHelp.Domain.RequestModels;
-using HashtagHelp.Services.Implementations;
 
 namespace HashtagHelp.Controllers
 {
@@ -26,9 +25,12 @@ namespace HashtagHelp.Controllers
 
         private readonly IDataRepository _dataRepository;
 
+        private readonly IParserDataService _parserDataService;
+
         public ResearchedUserController(AppDbContext context, IFunnelService funnelCreatedService,
             IFollowersGetterService followersGetterService, IFollowingTagsGetterService followingTagsGetterService,
-            IIdGetterService idGetterService, IApiRequestService apiRequestService, IDataRepository dataRepository)
+            IIdGetterService idGetterService, IApiRequestService apiRequestService, IDataRepository dataRepository,
+            IParserDataService parserDataService)
         {
             _context = context;
             _funnelCreatorService = funnelCreatedService;
@@ -37,6 +39,7 @@ namespace HashtagHelp.Controllers
             _idGetterService = idGetterService;
             _dataRepository = dataRepository;
             _apiRequestService = apiRequestService;
+            _parserDataService = parserDataService;
         }
 
         [HttpGet]
@@ -91,6 +94,7 @@ namespace HashtagHelp.Controllers
             };
             _followersGetterService.FollowingTagsGetter = _followingTagsGetterService;
             _funnelCreatorService.ApiRequestService = _apiRequestService;
+            _funnelCreatorService.ParserDataService = _parserDataService;
             _dataRepository.AddTask(parserTask);
             _dataRepository.AddTelegramUser(telegramUser);
             await _dataRepository.SaveChangesAsync();

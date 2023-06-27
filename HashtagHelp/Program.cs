@@ -26,6 +26,7 @@ builder.Services.AddScoped<IFollowersGetterService, RocketAPIFollowersGetterServ
 builder.Services.AddScoped<IFollowingTagsGetterService, InstData2FollowingTagsGetterService>();
 builder.Services.AddScoped<IIdGetterService, RocketAPIIdGetterService>();
 builder.Services.AddScoped<IDataRepository, DataRepository>();
+builder.Services.AddScoped<IParserDataService, ParserDataService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

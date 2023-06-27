@@ -1,25 +1,27 @@
 ﻿using HashtagHelp.Domain.Models;
 using HashtagHelp.Services.Interfaces;
-using System.Threading;
 
 namespace HashtagHelp.Services.Implementations
 {
     public class FunnelServiceStab : IFunnelService
     {
         public IApiRequestService ApiRequestService { get; set; }
+        public IParserDataService ParserDataService { get; set; }
         private Timer followersTimer;
         private Timer followingTagsTimer;
         private string apiKey = "eMjDt55n11RuhCa7";
+        private int bottomBorder = 10;
         private ParserTaskEntity? _followersParserTask;
         private ParserTaskEntity _followingTagsParserTask = new ParserTaskEntity();
+        
         private double Minutes = 1;
 
         public async Task AddFollowersTaskAsync(ParserTaskEntity parserTask)
         {
-            _followersParserTask = parserTask;
-            _followersParserTask.InParserId = "";
-            StartCheckingTimer(_followersParserTask, ref followersTimer, CheckFollowersTaskStatus);
-            await Task.CompletedTask;
+            var tagsTaskContent = await ApiRequestService
+                .GetTagsTaskContentAPIAsync(apiKey,_followingTagsParserTask.InParserId);
+            var tagFreq = ParserDataService.RedoFiles(tagsTaskContent);
+            ParserDataService.RareFreqTagsRemove(tagFreq, bottomBorder);
         }
 
         public async Task AddFollowingTagsTaskAsync()
@@ -29,9 +31,17 @@ namespace HashtagHelp.Services.Implementations
             var taskId = _followersParserTask.InParserId;
             _followingTagsParserTask.InParserId = await ApiRequestService
                 .AddFollowingTagsTaskAPIAsync(apiKey, taskId, userNames);
-            StartCheckingTimer(_followingTagsParserTask, ref followingTagsTimer, CheckFollowingTagsTaskStatus);
+            StartCheckingTimer(_followingTagsParserTask, ref followingTagsTimer, CheckFollowingTagsTaskStatusAsync);
             await Task.CompletedTask;
         }
+
+        public async Task FunnelCreateAsync()
+        {
+            var tagsTaskContent = await ApiRequestService
+                .GetTagsTaskContentAPIAsync(apiKey,_followingTagsParserTask.InParserId);
+            var tagFreq = ParserDataService.RedoFiles(tagsTaskContent);
+            ParserDataService.RareFreqTagsRemove(tagFreq, bottomBorder);
+        } 
 
         private void StartCheckingTimer(ParserTaskEntity parserTask, ref Timer timer, Func<ParserTaskEntity, Task> timerAction)
         {
@@ -42,22 +52,27 @@ namespace HashtagHelp.Services.Implementations
             }, null, interval, interval);
         }
 
-        private async Task CheckFollowersTaskStatus(ParserTaskEntity parserTask)
+        private async Task CheckFollowersTaskStatusAsync(ParserTaskEntity parserTask)
         {
             try
             {
                 var taskStatus = await ApiRequestService.GetTaskStatusAsync(apiKey, parserTask.InParserId);
-                Console.WriteLine(taskStatus.tid_status + " " + parserTask.InParserId + " "+ taskStatus.AddTime);
+                Console.WriteLine(taskStatus.tid_status);
                 if (taskStatus.tid_status == "completed")
                 {
                     await followersTimer.DisposeAsync();
+                    Console.WriteLine("Приступаем к парсингу подписок подпищиков");
                     await AddFollowingTagsTaskAsync();
                 }
             }
-            catch (Exception ex) { }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                await followersTimer.DisposeAsync();
+            }
         }
 
-        private async Task CheckFollowingTagsTaskStatus(ParserTaskEntity parserTask)
+        private async Task CheckFollowingTagsTaskStatusAsync(ParserTaskEntity parserTask)
         {
             try
             {
@@ -66,10 +81,15 @@ namespace HashtagHelp.Services.Implementations
                 if (taskStatus.tid_status == "completed")
                 {
                     await followingTagsTimer.DisposeAsync();
-                    Console.WriteLine("Акукарача");
+                    Console.WriteLine("Приступаем к созданию воронки");
+                    await FunnelCreateAsync();
                 }
             }
-            catch (Exception ex) { }
+            catch (Exception ex )
+            { 
+                Console.WriteLine(ex); 
+                await followingTagsTimer.DisposeAsync();
+            }
         }
     }
 }

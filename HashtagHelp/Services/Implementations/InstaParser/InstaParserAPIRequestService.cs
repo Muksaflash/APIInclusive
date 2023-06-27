@@ -11,7 +11,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         {
             _httpClient = new HttpClient();
         }
-        public async Task<string> GetContentTagsTaskAPIAsync(string apiKey, string FollowingTagsTaskId)
+        public async Task<string> GetTagsTaskContentAPIAsync(string apiKey, string FollowingTagsTaskId)
         {
             string apiUrl = $"https://instaparser.ru/api.php?key={apiKey}&mode=result&tid={FollowingTagsTaskId}";
 
@@ -24,9 +24,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         {
             var namesString = string.Join(",", researchedUsers);
             var taskName = "Subscribers Tags filtration of: " + " " + namesString;
-
             string apiUrl = $"https://instaparser.ru/api.php?key={apiKey}&mode=create&type=f1&name={taskName}&links={FollowersTaskId}&dop=7";
-
             HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
@@ -38,9 +36,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         {
             var namesString = string.Join(",", userNames);
             var taskName = "Subscribers collection of: " + " " + namesString;
-
             string apiUrl = $"https://instaparser.ru/api.php?key={apiKey}&mode=create&type=p1&name={taskName}&links={namesString}";
-
             HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
@@ -51,7 +47,6 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         public async Task<TaskStatusResponse> GetTaskStatusAsync(string apiKey, string taskId)
         {
             string apiUrl = $"https://instaparser.ru/api.php?key={apiKey}&mode=status&tid={taskId}";
-
             HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();

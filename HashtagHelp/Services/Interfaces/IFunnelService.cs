@@ -6,6 +6,8 @@ namespace HashtagHelp.Services.Interfaces
     {
         public IApiRequestService ApiRequestService { get; set; }
 
+        public IParserDataService ParserDataService { get; set; }
+
         Task AddFollowersTaskAsync(ParserTaskEntity parserTak);
 
         //Task CheckFollowersTaskStatus(ParserTaskEntity parserTak);
