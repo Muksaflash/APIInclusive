@@ -27,10 +27,17 @@ namespace HashtagHelp.Controllers
 
         private readonly IParserDataService _parserDataService;
 
+        private readonly IHashtagApiRequestService _hashtagApiRequestService;
+
+        private readonly IProcessLogger _processLogger;
+
+        private readonly IGoogleApiRequestService _googleApiRequestService;
+
         public ResearchedUserController(AppDbContext context, IFunnelService funnelCreatedService,
             IFollowersGetterService followersGetterService, IFollowingTagsGetterService followingTagsGetterService,
             IIdGetterService idGetterService, IApiRequestService apiRequestService, IDataRepository dataRepository,
-            IParserDataService parserDataService)
+            IParserDataService parserDataService, IHashtagApiRequestService hashtagApiRequestService, 
+            IProcessLogger processLogger, IGoogleApiRequestService googleApiRequestService)
         {
             _context = context;
             _funnelCreatorService = funnelCreatedService;
@@ -40,6 +47,9 @@ namespace HashtagHelp.Controllers
             _dataRepository = dataRepository;
             _apiRequestService = apiRequestService;
             _parserDataService = parserDataService;
+            _hashtagApiRequestService = hashtagApiRequestService;
+            _processLogger = processLogger;
+            _googleApiRequestService = googleApiRequestService;
         }
 
         [HttpGet]
@@ -78,7 +88,7 @@ namespace HashtagHelp.Controllers
             var nickName = requestData.NickName;
             if (string.IsNullOrEmpty(nickName))
                 return BadRequest("Invalid request data.");
-            var telegramUser = new TelegramUserEntity
+            var user = new TelegramUserEntity
             {
                 NickName = nickName
             };
@@ -95,8 +105,11 @@ namespace HashtagHelp.Controllers
             _followersGetterService.FollowingTagsGetter = _followingTagsGetterService;
             _funnelCreatorService.ApiRequestService = _apiRequestService;
             _funnelCreatorService.ParserDataService = _parserDataService;
+            _funnelCreatorService.HashtagApiRequestService = _hashtagApiRequestService;
+            _funnelCreatorService.ProcessLogger = _processLogger;
+            _funnelCreatorService.GoogleApiRequestService = _googleApiRequestService;
             _dataRepository.AddTask(parserTask);
-            _dataRepository.AddTelegramUser(telegramUser);
+            _dataRepository.AddTelegramUser(user);
             await _dataRepository.SaveChangesAsync();
             await _funnelCreatorService.AddFollowersTaskAsync(parserTask);
             return CreatedAtAction(nameof(GetResearchedUser),
