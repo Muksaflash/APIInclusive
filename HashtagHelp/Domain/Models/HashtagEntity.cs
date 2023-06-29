@@ -8,6 +8,6 @@
 
         public string InstagramId { get; set; } = string.Empty;
 
-        public long MediaCount { get; set; }
+        public string MediaCount { get; set; } = string.Empty;
     }
 }

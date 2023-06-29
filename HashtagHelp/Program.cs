@@ -1,5 +1,6 @@
 using HashtagHelp.DAL;
 using HashtagHelp.Services.Implementations;
+using HashtagHelp.Services.Implementations.Loggers;
 using HashtagHelp.Services.Implementations.InstagramData;
 using HashtagHelp.Services.Implementations.InstData2;
 using HashtagHelp.Services.Implementations.RocketAPI;
@@ -17,16 +18,20 @@ var connectionString = builder.Configuration.GetConnectionString("MYSQL");
 if (connectionString != null)
     builder.Services.AddDbContext<AppDbContext>(options =>
     {
-        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
+        builder => builder.CommandTimeout(30));
     });
 
-builder.Services.AddScoped<IFunnelService, FunnelService>();
+builder.Services.AddScoped<IFunnelService, FunnelServiceStab>();
 builder.Services.AddScoped<IApiRequestService, InstaParserAPIRequestService>();
 builder.Services.AddScoped<IFollowersGetterService, RocketAPIFollowersGetterService>();
 builder.Services.AddScoped<IFollowingTagsGetterService, InstData2FollowingTagsGetterService>();
 builder.Services.AddScoped<IIdGetterService, RocketAPIIdGetterService>();
 builder.Services.AddScoped<IDataRepository, DataRepository>();
 builder.Services.AddScoped<IParserDataService, ParserDataService>();
+builder.Services.AddScoped<IHashtagApiRequestService, RocketAPIRequestService>();
+builder.Services.AddScoped<IProcessLogger, DesktopFileLogger>();
+builder.Services.AddScoped<IGoogleApiRequestService, GoogleRequestApiService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
