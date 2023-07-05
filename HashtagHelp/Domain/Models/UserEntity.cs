@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HashtagHelp.Domain.Models
 {
-    public abstract class UserEntity
+    public class UserEntity
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 

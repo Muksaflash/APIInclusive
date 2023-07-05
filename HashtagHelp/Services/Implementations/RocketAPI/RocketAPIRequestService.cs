@@ -1,4 +1,5 @@
 ﻿using HashtagHelp.Domain.ExternalApiModels.RocketAPI;
+using HashtagHelp.Services.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
@@ -6,7 +7,7 @@ using System.Text;
 
 namespace HashtagHelp.Services.Implementations.RocketAPI
 {
-    public class RocketAPIRequestService<T>
+    public class RocketAPIRequestService : IHashtagApiRequestService
     {
         public async Task<string> GetIdAPIAsync(string apiKey, string nickName)
         {
@@ -42,9 +43,8 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
 
             if (response.IsSuccessStatusCode)
             {
-                // Обработка успешного ответа и преобразование в список
-                var UserId = ProcessApiIdResponse(body);
-                return UserId;
+                var userId = ProcessApiIdResponse(body);
+                return userId;
             }
             else
             {
@@ -53,15 +53,58 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
             }
         }
 
-        public async Task<List<T>> GetObjectsAPIAsync(string apiKey, string userId)
+        public async Task<BodyData> GetHashtagInfoAsync(string apiKey, string hashtag)
+        {
+            string json = $"{{ \"name\": \"{hashtag}\" }}";
+            var client = new HttpClient();
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri("https://rocketapi-for-instagram.p.rapidapi.com/instagram/hashtag/get_info"),
+                Headers =
+                {
+                    { "X-RapidAPI-Key", apiKey },
+                    { "X-RapidAPI-Host", "rocketapi-for-instagram.p.rapidapi.com" },
+                },
+                Content = new StringContent(json)
+                {
+                    Headers =
+                    {
+                    ContentType = new MediaTypeHeaderValue("application/json")
+                    }
+                }
+            };
+
+            HttpResponseMessage response;
+            string body;
+
+            using (response = await client.SendAsync(request))
+            {
+                response.EnsureSuccessStatusCode();
+                body = await response.Content.ReadAsStringAsync();
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                ServerResponse serverResponse = JsonConvert.DeserializeObject<ServerResponse>(body);
+                var hashtagInfo = serverResponse.response.Body.data;
+                return hashtagInfo;
+            }
+            else
+            {
+                throw new Exception("Error: " + response.ReasonPhrase);
+            }
+        }
+
+        public async Task<List<User>> GetObjectsAPIAsync(string apiKey, string userId)
         {
             const string apiUrl = "https://rocketapi-for-instagram.p.rapidapi.com";
             const string followersEndpoint = "/instagram/user/get_followers";
             const string rapidApiKeyHeader = "X-RapidAPI-Key";
             const string rapidApiHostHeader = "X-RapidAPI-Host";
 
-            var objects = new List<T>();
-            RootObject<T> dataResponse = new();
+            var objects = new List<User>();
+            RootObject dataResponse = new();
             string? maxId = null;
 
             using var client = new HttpClient();
@@ -109,16 +152,15 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
         {
             string jsonString = responseContent;
             JObject jsonResponse = new JObject();
-
             jsonResponse = JObject.Parse(jsonString);
             var userId = jsonResponse["response"]["body"]["data"]["user"]["id"].ToString();
             return userId;
         }
 
-        RootObject<T> ProcessApiFollowerResponse(string responseContent)
+        RootObject ProcessApiFollowerResponse(string responseContent)
         {
             string json = responseContent;
-            RootObject<T> root = JsonConvert.DeserializeObject<RootObject<T>>(json);
+            RootObject root = JsonConvert.DeserializeObject<RootObject>(json);
             return root;
         }
     }

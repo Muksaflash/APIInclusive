@@ -1,7 +1,5 @@
 ﻿using HashtagHelp.Domain.ExternalApiModels.InstaParser;
 using HashtagHelp.Services.Interfaces;
-using System.Net.Http;
-using System.Net.Http.Headers;
 
 namespace HashtagHelp.Services.Implementations.InstaParser
 {
@@ -13,21 +11,22 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         {
             _httpClient = new HttpClient();
         }
+        public async Task<string> GetTagsTaskContentAPIAsync(string apiKey, string FollowingTagsTaskId)
+        {
+            string apiUrl = $"https://instaparser.ru/api.php?key={apiKey}&mode=result&tid={FollowingTagsTaskId}";
 
+            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
+            response.EnsureSuccessStatusCode();
+            string responseBody = await response.Content.ReadAsStringAsync();
+            return responseBody;
+        }
         public async Task<string> AddFollowingTagsTaskAPIAsync(string apiKey, string FollowersTaskId, List<string> researchedUsers)
         {
             var namesString = string.Join(",", researchedUsers);
             var taskName = "Subscribers Tags filtration of: " + " " + namesString;
-
-            string apiUrl = $"https://instaparser.ru/api.php?key={apiKey}&mode=create&type=f1&name={taskName}&links={FollowersTaskId}&dop=7,10";
-
+            string apiUrl = $"https://instaparser.ru/api.php?key={apiKey}&mode=create&type=f1&name={taskName}&links={FollowersTaskId}&dop=7";
             HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
             response.EnsureSuccessStatusCode();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception();
-            }
             string responseBody = await response.Content.ReadAsStringAsync();
             var taskId = GetTaskId(responseBody);
             return taskId;
@@ -37,9 +36,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         {
             var namesString = string.Join(",", userNames);
             var taskName = "Subscribers collection of: " + " " + namesString;
-
             string apiUrl = $"https://instaparser.ru/api.php?key={apiKey}&mode=create&type=p1&name={taskName}&links={namesString}";
-
             HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
             response.EnsureSuccessStatusCode();
             string responseBody = await response.Content.ReadAsStringAsync();
@@ -50,7 +47,6 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         public async Task<TaskStatusResponse> GetTaskStatusAsync(string apiKey, string taskId)
         {
             string apiUrl = $"https://instaparser.ru/api.php?key={apiKey}&mode=status&tid={taskId}";
-
             HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();
@@ -66,7 +62,6 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             {
                 if (part.StartsWith("\"tid\":\""))
                 {
-                    // Извлекаем идентификаторы заданий из части, начинающейся с "tid"
                     taskId = part[7..];
                     break;
                 }
@@ -74,21 +69,5 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             taskId = new string(taskId.Where(char.IsDigit).ToArray());
             return taskId;
         }
-
-        //private string GetTaskStatusAsync(string response)
-        //{
-        //    string[] parts = response.Split(',');
-        //    string taskStatus = string.Empty;
-        //    foreach (string part in parts)
-        //    {
-        //        if (part.StartsWith("tid_status:"))
-        //        {
-        //            // Извлекаем идентификаторы заданий из части, начинающейся с "tid"
-        //            taskStatus = part[11..];
-        //            break;
-        //        }
-        //    }
-        //    return taskStatus;
-        //}
     }
 }

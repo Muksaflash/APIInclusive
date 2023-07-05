@@ -1,8 +1,8 @@
 ﻿namespace HashtagHelp.Domain.ExternalApiModels.RocketAPI
 {
-    public class Body<T>
+    public class Body
     {
-        public List<T>? Users { get; set; }
+        public List<User>? Users { get; set; }
         public bool BigList { get; set; }
         public int PageSize { get; set; }
         public string? NextMaxId { get; set; }
