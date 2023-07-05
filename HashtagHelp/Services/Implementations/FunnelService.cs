@@ -1,7 +1,6 @@
 ﻿using HashtagHelp.Domain.Models;
 using HashtagHelp.Domain.Enums;
 using HashtagHelp.Services.Interfaces;
-
 namespace HashtagHelp.Services.Implementations
 {
     public class FunnelService : IFunnelService
@@ -153,6 +152,7 @@ namespace HashtagHelp.Services.Implementations
             {
                 Console.WriteLine(ex);
                 ProcessLogger.Log(ex.Message);
+
             }
         }
     }
