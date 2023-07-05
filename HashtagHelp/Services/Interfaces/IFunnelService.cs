@@ -10,11 +10,12 @@ namespace HashtagHelp.Services.Interfaces
 
         public IParserDataService ParserDataService { get; set; }
 
-        Task AddFollowersTaskAsync(ParserTaskEntity parserTak);
+        Task AddFollowersTaskAsync(GeneralTaskEntity generalTaskEntity);
+        
         public IProcessLogger ProcessLogger{ get; set; }
 
         public IGoogleApiRequestService GoogleApiRequestService { get; set; }
 
-        //Task CheckFollowersTaskStatus(ParserTaskEntity parserTak);
+        public IDataRepository DataRepository { get; set; }
     }
 }

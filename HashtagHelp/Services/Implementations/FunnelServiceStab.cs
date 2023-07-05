@@ -1,4 +1,4 @@
-﻿using HashtagHelp.Domain.Models;
+﻿/* using HashtagHelp.Domain.Models;
 using HashtagHelp.Services.Interfaces;
 
 namespace HashtagHelp.Services.Implementations
@@ -24,7 +24,7 @@ namespace HashtagHelp.Services.Implementations
         public async Task AddFollowersTaskAsync(ParserTaskEntity parserTask)
         {
             ProcessLogger.Log("Stab was started");
-            var myString = await GoogleApiRequestService.GetDataAsync();
+            var myDictionary = await GoogleApiRequestService.GetDataAsync();
             _followersParserTask = parserTask;
             var userNames = _followersParserTask.ResearchedUsers
                 .Select(researchedUser => researchedUser.NickName).ToList();
@@ -122,3 +122,4 @@ namespace HashtagHelp.Services.Implementations
         }
     }
 }
+ */

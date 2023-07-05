@@ -53,7 +53,7 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
             }
         }
 
-        public async Task<BodyData> GetMediaCountAsync(string apiKey, string hashtag)
+        public async Task<BodyData> GetHashtagInfoAsync(string apiKey, string hashtag)
         {
             string json = $"{{ \"name\": \"{hashtag}\" }}";
             var client = new HttpClient();

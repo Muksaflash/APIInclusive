@@ -4,6 +4,6 @@ namespace HashtagHelp.Services.Interfaces
 {
     public interface IHashtagApiRequestService
     {
-        Task<BodyData> GetMediaCountAsync(string apiKey, string hashtag);
+        Task<BodyData> GetHashtagInfoAsync(string apiKey, string hashtag);
     }
 }

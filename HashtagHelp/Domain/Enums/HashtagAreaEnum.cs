@@ -1,6 +1,6 @@
 namespace HashtagHelp.Domain.Enums
 {
-    public enum HashtagsScopeEnum
+    public enum HashtagAreaEnum
     {
         Психология,
         Нутрициология,
