@@ -3,6 +3,7 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using HashtagHelp.Services.Interfaces;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace HashtagHelp.Services.Implementations.InstaParser
 {
@@ -25,24 +26,33 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 ApplicationName = "HashtagHelp"
             });
         }
-        public async Task<string> GetDataAsync()
+        public async Task<List<string>> GetDataAsync(string hashtagArea)
         {
             string spreadsheetId = "1GB4pkp8M2H2twaliGdhD5pEDlsmEPC9gBT_FUmPq270";
-            string range = "food!A1";
+            string sheetName = "hashtagArea";
 
             SpreadsheetsResource.ValuesResource.GetRequest request =
-                sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
+                sheetsService.Spreadsheets.Values.Get(spreadsheetId, sheetName);
+
+            request.MajorDimension = SpreadsheetsResource.ValuesResource.GetRequest.MajorDimensionEnum.ROWS;
 
             ValueRange response = await request.ExecuteAsync();
             IList<IList<object>> values = response.Values;
+            List<string> hashtags = new();
 
             if (values != null && values.Count > 0)
             {
-                string cellValue = values[0][0].ToString();
-                Console.WriteLine("Значение ячейки A1: " + cellValue);
-                return cellValue;
+                foreach (var row in values)
+                {
+                    if (row.Count >= 2)
+                    {
+                        var hashtag = row[0].ToString();
+                        hashtags.Add(hashtag);
+                    }
+                }
+                return hashtags;
             }
-            return "don't work GoogleSheet API"; 
+            return hashtags;
         }
     }
 }

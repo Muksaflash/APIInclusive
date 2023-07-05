@@ -31,9 +31,17 @@ namespace HashtagHelp.Services.Implementations
             return freqDict;
         }
 
-        public void RareFreqTagsRemove(Dictionary<string, int> freqDict, int bottomBorder)
+        public void RareFreqTagsRemove(Dictionary<string, int> freqDict)
         {
-            freqDict = freqDict.Where(x => x.Value >= bottomBorder).ToDictionary(x => x.Key, x => x.Value);
+            int bottomBorder = freqDict.Count / 1000 + 5;
+            if (bottomBorder > 50) bottomBorder = 50;
+            var newFreqDict = freqDict.Where(x => x.Value >= bottomBorder).ToDictionary(x => x.Key, x => x.Value);
+            while(newFreqDict.Count < 100)
+            {
+                bottomBorder -= 1;
+                newFreqDict = freqDict.Where(x => x.Value >= bottomBorder).ToDictionary(x => x.Key, x => x.Value);
+            }
+            freqDict = newFreqDict;
         }
     }
 }

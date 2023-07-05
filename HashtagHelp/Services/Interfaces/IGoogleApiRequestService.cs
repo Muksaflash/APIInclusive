@@ -4,6 +4,6 @@ namespace HashtagHelp.Services.Interfaces
 {
     public interface IGoogleApiRequestService
     {
-        Task<string> GetDataAsync();
+        Task<List<string>> GetDataAsync(string hashtagArea);
     }
 }

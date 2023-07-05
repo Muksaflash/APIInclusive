@@ -6,10 +6,11 @@ namespace HashtagHelp.Domain.Models
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public UserEntity? User { get; set; }
-        public ParserTaskEntity? CollectionTask { get; set; } 
-        public ParserTaskEntity? FiltrationTask { get; set; } 
+        public ParserTaskEntity? CollectionTask { get; set; }
+        public ParserTaskEntity? FiltrationTask { get; set; }
         public FunnelEntity? HashtagFunnel { get; set; }
-        public HashtagsScopeEnum HashtagScopeEnum { get; set; }
-        public string? InstaParserKey { get; set; }
+        public string HashtagArea { get; set; } = string.Empty;
+        public string? InstaParserCollectionKey { get; set; }
+        public string? InstaParserFiltrationKey { get; set; }
     }
 }

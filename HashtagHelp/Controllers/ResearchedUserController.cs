@@ -84,14 +84,12 @@ namespace HashtagHelp.Controllers
         {
             if (_context.ResearchedUsers == null)
                 return Problem("Entity set 'AppDbContext.ResearchedUsers' is null.");
-
-            var nickName = requestData.NickName;
-            if (string.IsNullOrEmpty(nickName))
-                return BadRequest("Invalid request data.");
-            var user = new TelegramUserEntity
+            var user = new UserEntity
             {
-                NickName = nickName
+                NickName = requestData.NickName,
+                SocialId = requestData.Id
             };
+            var generalTask = new GeneralTaskEntity();
             var parserTask = new ParserTaskEntity();
             foreach (var name in requestData.RequestNickNames)
             {
@@ -102,16 +100,19 @@ namespace HashtagHelp.Controllers
                     IdGetter = _idGetterService
                 });
             };
+            generalTask.CollectionTask = parserTask;
+            generalTask.HashtagArea = requestData.HashtagArea;
+            generalTask.User = user;
             _followersGetterService.FollowingTagsGetter = _followingTagsGetterService;
             _funnelCreatorService.ApiRequestService = _apiRequestService;
             _funnelCreatorService.ParserDataService = _parserDataService;
             _funnelCreatorService.HashtagApiRequestService = _hashtagApiRequestService;
             _funnelCreatorService.ProcessLogger = _processLogger;
             _funnelCreatorService.GoogleApiRequestService = _googleApiRequestService;
-            _dataRepository.AddTask(parserTask);
-            _dataRepository.AddTelegramUser(user);
+            _funnelCreatorService.DataRepository = _dataRepository;
+            _dataRepository.AddGeneralTask(generalTask);
             await _dataRepository.SaveChangesAsync();
-            await _funnelCreatorService.AddFollowersTaskAsync(parserTask);
+            await _funnelCreatorService.AddFollowersTaskAsync(generalTask);
             return CreatedAtAction(nameof(GetResearchedUser),
                 new { id = parserTask.Id }, parserTask);
         }
