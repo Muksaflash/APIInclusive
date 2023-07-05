@@ -1,3 +1,4 @@
+
 ﻿/* using HashtagHelp.Domain.Models;
 using HashtagHelp.Services.Interfaces;
 
@@ -6,6 +7,7 @@ namespace HashtagHelp.Services.Implementations
     public class FunnelServiceStab : IFunnelService
     {
         public IApiRequestService ApiRequestService { get; set; }
+
         public IHashtagApiRequestService HashtagApiRequestService { get; set; }
         public IParserDataService ParserDataService { get; set; }
         public IProcessLogger ProcessLogger { get; set; }
@@ -71,7 +73,6 @@ namespace HashtagHelp.Services.Implementations
                 ProcessLogger.Log(ex.Message);
             }
         } 
-
         private void StartCheckingTimer(ParserTaskEntity parserTask, ref Timer timer, Func<ParserTaskEntity, Task> timerAction)
         {
             var interval = TimeSpan.FromMinutes(Minutes);
@@ -110,6 +111,7 @@ namespace HashtagHelp.Services.Implementations
                 if (taskStatus.tid_status == "completed")
                 {
                     await followingTagsTimer.DisposeAsync();
+
                     Console.WriteLine("Приступаем к созданию воронки");
                     await FunnelCreateAsync();
                 }
