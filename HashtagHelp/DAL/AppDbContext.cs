@@ -10,13 +10,24 @@ namespace HashtagHelp.DAL
         {
             Database.EnsureDeleted();
             Database.EnsureCreated();
-            
         }
+
         public DbSet<FollowerEntity> Followers { get; set; } = null!;
         public DbSet<HashtagEntity> Hashtags { get; set; } = null!;
         public DbSet<ResearchedUserEntity> ResearchedUsers { get; set; } = null!;
         public DbSet<FunnelEntity> Funnels { get; set; } = null!;
         public DbSet<ParserTaskEntity> Tasks { get; set; } = null!;
-        public DbSet<TelegramUserEntity> TelegramUsers { get; set; } = null!;
+        public DbSet<GeneralTaskEntity> GeneralTasks { get; set; } = null!;
+        public DbSet<UserEntity> Users { get; set; } = null!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ParserTaskEntity>()
+                .Property(p => p.Status)
+                .HasConversion<string>();
+
+            base.OnModelCreating(modelBuilder);
+        }
     }
 }
+

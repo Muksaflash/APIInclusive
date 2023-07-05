@@ -4,7 +4,6 @@ using HashtagHelp.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HashtagHelp.Domain.RequestModels;
-using HashtagHelp.Services.Implementations;
 
 namespace HashtagHelp.Controllers
 {
@@ -26,9 +25,19 @@ namespace HashtagHelp.Controllers
 
         private readonly IDataRepository _dataRepository;
 
+        private readonly IParserDataService _parserDataService;
+
+        private readonly IHashtagApiRequestService _hashtagApiRequestService;
+
+        private readonly IProcessLogger _processLogger;
+
+        private readonly IGoogleApiRequestService _googleApiRequestService;
+
         public ResearchedUserController(AppDbContext context, IFunnelService funnelCreatedService,
             IFollowersGetterService followersGetterService, IFollowingTagsGetterService followingTagsGetterService,
-            IIdGetterService idGetterService, IApiRequestService apiRequestService, IDataRepository dataRepository)
+            IIdGetterService idGetterService, IApiRequestService apiRequestService, IDataRepository dataRepository,
+            IParserDataService parserDataService, IHashtagApiRequestService hashtagApiRequestService, 
+            IProcessLogger processLogger, IGoogleApiRequestService googleApiRequestService)
         {
             _context = context;
             _funnelCreatorService = funnelCreatedService;
@@ -37,6 +46,10 @@ namespace HashtagHelp.Controllers
             _idGetterService = idGetterService;
             _dataRepository = dataRepository;
             _apiRequestService = apiRequestService;
+            _parserDataService = parserDataService;
+            _hashtagApiRequestService = hashtagApiRequestService;
+            _processLogger = processLogger;
+            _googleApiRequestService = googleApiRequestService;
         }
 
         [HttpGet]
@@ -71,14 +84,12 @@ namespace HashtagHelp.Controllers
         {
             if (_context.ResearchedUsers == null)
                 return Problem("Entity set 'AppDbContext.ResearchedUsers' is null.");
-
-            var nickName = requestData.NickName;
-            if (string.IsNullOrEmpty(nickName))
-                return BadRequest("Invalid request data.");
-            var telegramUser = new TelegramUserEntity
+            var user = new UserEntity
             {
-                NickName = nickName
+                NickName = requestData.NickName,
+                SocialId = requestData.Id
             };
+            var generalTask = new GeneralTaskEntity();
             var parserTask = new ParserTaskEntity();
             foreach (var name in requestData.RequestNickNames)
             {
@@ -89,12 +100,19 @@ namespace HashtagHelp.Controllers
                     IdGetter = _idGetterService
                 });
             };
+            generalTask.CollectionTask = parserTask;
+            generalTask.HashtagArea = requestData.HashtagArea;
+            generalTask.User = user;
             _followersGetterService.FollowingTagsGetter = _followingTagsGetterService;
             _funnelCreatorService.ApiRequestService = _apiRequestService;
-            _dataRepository.AddTask(parserTask);
-            _dataRepository.AddTelegramUser(telegramUser);
+            _funnelCreatorService.ParserDataService = _parserDataService;
+            _funnelCreatorService.HashtagApiRequestService = _hashtagApiRequestService;
+            _funnelCreatorService.ProcessLogger = _processLogger;
+            _funnelCreatorService.GoogleApiRequestService = _googleApiRequestService;
+            _funnelCreatorService.DataRepository = _dataRepository;
+            _dataRepository.AddGeneralTask(generalTask);
             await _dataRepository.SaveChangesAsync();
-            await _funnelCreatorService.AddFollowersTaskAsync(parserTask);
+            await _funnelCreatorService.AddFollowersTaskAsync(generalTask);
             return CreatedAtAction(nameof(GetResearchedUser),
                 new { id = parserTask.Id }, parserTask);
         }

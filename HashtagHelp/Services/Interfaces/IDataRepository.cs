@@ -4,10 +4,18 @@ namespace HashtagHelp.Services.Interfaces
 {
     public interface IDataRepository
     {
-        void AddTask(ParserTaskEntity task);
+        void AddGeneralTask(GeneralTaskEntity task);
 
-        void AddTelegramUser(TelegramUserEntity user);
+        void UpdateGeneralTask(GeneralTaskEntity generalTaskEntity);
+
+        void AddUser(UserEntity user);
+
+        void AddHashtag(HashtagEntity hashtag);
 
         Task SaveChangesAsync();
+
+        bool DoesFieldExist(string tableName, string fieldName);
+
+        Task<TEntity> GetEntityByFieldValueAsync<TEntity>(string tableName, string fieldName, string fieldValue) where TEntity : class;
     }
 }

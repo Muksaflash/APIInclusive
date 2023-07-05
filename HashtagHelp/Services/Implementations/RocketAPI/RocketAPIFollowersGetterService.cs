@@ -12,7 +12,7 @@ namespace HashtagHelp.Services.Implementations.InstagramData
         {
             var apiKey = "a8f3f7e68amsh2703987539fa87cp17165ajsn6d5c6feed1e9";
             
-            RocketAPIRequestService<User> APIRequestService = new RocketAPIRequestService<User>();
+            RocketAPIRequestService APIRequestService = new RocketAPIRequestService();
             //var UserId = await APIRequestService.GetIdAPIAsync(apiKey, researchedUser.NickName);
             var userId = researchedUser.SocialId.ToString();
             var followers = await APIRequestService.GetObjectsAPIAsync(apiKey, userId);

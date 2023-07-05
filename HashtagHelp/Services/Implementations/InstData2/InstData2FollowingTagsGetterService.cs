@@ -15,7 +15,7 @@ namespace HashtagHelp.Services.Implementations.InstData2
             {
                 InstagramId = node.Id,
                 Name= node.Name,
-                MediaCount= node.MediaCount
+                //MediaCount= node.MediaCount
             }).ToList();
             return Hashtags;
         }

@@ -6,8 +6,16 @@ namespace HashtagHelp.Services.Interfaces
     {
         public IApiRequestService ApiRequestService { get; set; }
 
-        Task AddFollowersTaskAsync(ParserTaskEntity parserTak);
+        public IHashtagApiRequestService HashtagApiRequestService { get; set; }
 
-        //Task CheckFollowersTaskStatus(ParserTaskEntity parserTak);
+        public IParserDataService ParserDataService { get; set; }
+
+        Task AddFollowersTaskAsync(GeneralTaskEntity generalTaskEntity);
+        
+        public IProcessLogger ProcessLogger{ get; set; }
+
+        public IGoogleApiRequestService GoogleApiRequestService { get; set; }
+
+        public IDataRepository DataRepository { get; set; }
     }
 }

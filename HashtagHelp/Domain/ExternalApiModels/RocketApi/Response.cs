@@ -1,9 +1,9 @@
 ﻿namespace HashtagHelp.Domain.ExternalApiModels.RocketAPI
 {
-    public class Response<T>
+    public class Response
     {
         public int StatusCode { get; set; }
         public string? ContentType { get; set; }
-        public Body<T>? Body { get; set; }
+        public ResponseBody? Body { get; set; }
     }
 }
