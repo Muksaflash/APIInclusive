@@ -4,11 +4,17 @@ namespace HashtagHelp.Services.Interfaces
 {
     public interface IDataRepository
     {
-        void AddGeneralTask(GeneralTaskEntity task);
+        void AddGeneralTask(GeneralTaskEntity generalTask);
 
-        void UpdateGeneralTask(GeneralTaskEntity generalTaskEntity);
+        void UpdateGeneralTask(GeneralTaskEntity generalTask);
+        
+        void AddParserTask(ParserTaskEntity task);
+
+        void UpdateParserTask(ParserTaskEntity task);
 
         void AddUser(UserEntity user);
+
+        void UpdateUser(UserEntity user);
 
         void AddHashtag(HashtagEntity hashtag);
 
