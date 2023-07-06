@@ -111,6 +111,8 @@ namespace HashtagHelp.Controllers
             _funnelCreatorService.GoogleApiRequestService = _googleApiRequestService;
             _funnelCreatorService.DataRepository = _dataRepository;
             _dataRepository.AddGeneralTask(generalTask);
+            _dataRepository.AddParserTask(parserTask);
+            _dataRepository.AddUser(user);
             await _dataRepository.SaveChangesAsync();
             await _funnelCreatorService.AddFollowersTaskAsync(generalTask);
             return CreatedAtAction(nameof(GetResearchedUser),

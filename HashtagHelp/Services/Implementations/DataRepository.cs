@@ -4,7 +4,6 @@ using HashtagHelp.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-
 namespace HashtagHelp.Services.Implementations
 {
     public class DataRepository : IDataRepository
@@ -16,19 +15,34 @@ namespace HashtagHelp.Services.Implementations
             _context = context;
         }
 
-        public void AddGeneralTask(GeneralTaskEntity task)
+        public void AddGeneralTask(GeneralTaskEntity generalTask)
         {
-            _context.GeneralTasks.Add(task);
+            _context.GeneralTasks.Add(generalTask);
         }
 
         public void UpdateGeneralTask(GeneralTaskEntity generalTask)
         {
-            _context.Entry(generalTask).State = EntityState.Modified;
+            _context.GeneralTasks.Update(generalTask);
+        }
+
+        public void AddParserTask(ParserTaskEntity task)
+        {
+            _context.Tasks.Add(task);
+        }
+
+        public void UpdateParserTask(ParserTaskEntity task)
+        {
+            _context.Tasks.Update(task);
         }
 
         public void AddUser(UserEntity user)
         {
             _context.Users.Add(user);
+        }
+
+        public void UpdateUser(UserEntity user)
+        {
+            _context.Users.Update(user);
         }
 
         public void AddHashtag(HashtagEntity hashtag)
