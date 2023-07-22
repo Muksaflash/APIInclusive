@@ -1,6 +1,6 @@
 namespace HashtagHelp.Domain.Enums
 {
-    public enum StatusParserTaskEnum
+    public enum StatusTaskEnum
     {
         InProcess,
         Completed,

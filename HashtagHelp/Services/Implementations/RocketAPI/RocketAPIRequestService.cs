@@ -2,6 +2,145 @@
 using HashtagHelp.Services.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Text;
+
+namespace HashtagHelp.Services.Implementations.RocketAPI
+{
+    public class RocketAPIRequestService : IHashtagApiRequestService
+    {
+        private readonly HttpClient _httpClient;
+        private readonly string _apiUrl = "https://rocketapi-for-instagram.p.rapidapi.com";
+        private readonly string _rapidApiKeyHeader = "X-RapidAPI-Key";
+        private readonly string _rapidApiHostHeader = "X-RapidAPI-Host";
+        private readonly string _rapidApiHostHeaderValue = "rocketapi-for-instagram.p.rapidapi.com";
+        private readonly int _maxAttempts = 5; // Максимальное количество повторных попыток
+        private readonly int _maxBackoffTime = 64000; // Максимальное время отсрочки (64 секунды)
+
+        public RocketAPIRequestService()
+        {
+            _httpClient = new HttpClient();
+            _httpClient.DefaultRequestHeaders.Add(_rapidApiHostHeader, _rapidApiHostHeaderValue);
+        }
+
+        public async Task<string> GetIdAPIAsync(string nickName)
+        {
+            string json = $"{{ \"username\": \"{nickName}\" }}";
+            string apiUrl = $"{_apiUrl}/instagram/user/get_info";
+            return await GetRocketApiData(apiUrl, json);
+        }
+
+        public async Task<BodyData> GetHashtagInfoAsync(string apiKey, string hashtag)
+        {
+            _httpClient.DefaultRequestHeaders.Add(_rapidApiKeyHeader, apiKey);
+            string jsonRequestData = $"{{ \"name\": \"{hashtag}\" }}";
+            string apiUrl = $"{_apiUrl}/instagram/hashtag/get_info";
+            var response = await GetRocketApiData(apiUrl, jsonRequestData);
+            ServerResponse serverResponse = JsonConvert.DeserializeObject<ServerResponse>(response);
+            var hashtagInfo = serverResponse.response.Body.data;
+            return hashtagInfo;
+        }
+
+        public async Task<List<User>> GetObjectsAPIAsync(string userId)
+        {
+            var objects = new List<User>();
+            RootObject dataResponse;
+            string? maxId = null;
+
+            do
+            {
+                string jsonSetup = $@"{{
+                    ""id"": {userId},
+                    ""count"": 100, 
+                    ""max_id"": {maxId ?? "null"}
+                }}";
+
+                string apiUrl = $"{_apiUrl}/instagram/user/get_followers";
+                var response = await GetRocketApiData(apiUrl, jsonSetup);
+                dataResponse = JsonConvert.DeserializeObject<RootObject>(response);
+                objects.AddRange(dataResponse.Response.Body.Users);
+                try
+                {
+                    var jsonData = JObject.Parse(response);
+                    maxId = jsonData["response"]["body"]["next_max_id"].ToString();
+                }
+                catch
+                {
+                    break;
+                }
+                await Task.Delay(1000);
+            } while (true);
+
+            return objects;
+        }
+
+        private async Task<string> GetRocketApiData(string apiUrl, string json)
+        {
+            string responseBody = await GetValuesWithRetryAsync(_maxAttempts, async () =>
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri(apiUrl),
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                using var response = await _httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync();
+            });
+
+            return responseBody;
+        }
+
+        private async Task<T> GetValuesWithRetryAsync<T>(int maxAttempts, Func<Task<T>> action)
+        {
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    return await action();
+                }
+                catch (Exception ex) when (IsRetryableError(ex) && attempt < maxAttempts)
+                {
+                    // Обработка ошибки с повторной попыткой
+                    await HandleRetryableError(ex, attempt, _maxBackoffTime);
+                }
+                catch (Exception ex) when (!IsRetryableError(ex))
+                {
+                    // Обработка неповторяемых ошибок
+                    Console.WriteLine($"Неповторяемая ошибка (попытка {attempt}): {ex.Message}");
+                    throw;
+                }
+            }
+
+            // Если достигли этой точки, значит не удалось получить данные после максимального числа повторных попыток
+            throw new Exception("Не удалось выполнить действие после максимального числа повторных попыток.");
+        }
+
+        private bool IsRetryableError(Exception ex)
+        {
+            // Проверяем, является ли ошибка повторяемой
+            // Возможно, здесь нужно добавить дополнительные условия для определения повторяемой ошибки
+            return ex is HttpRequestException;
+        }
+
+        private async Task HandleRetryableError(Exception ex, int attempt, int maxBackoffTime)
+        {
+            // Обработка повторяемой ошибки с задержкой перед повторной попыткой
+            int randomMilliseconds = new Random().Next(1000);
+            int backoffTime = Math.Min((int)Math.Pow(2, attempt) * 1000 + randomMilliseconds, maxBackoffTime);
+
+            Console.WriteLine($"Ошибка (попытка {attempt}): {ex.Message}");
+            Console.WriteLine($"Повторная попытка через {backoffTime} мс.");
+            await Task.Delay(backoffTime);
+        }
+    }
+}
+
+
+/* using HashtagHelp.Domain.ExternalApiModels.RocketAPI;
+using HashtagHelp.Services.Interfaces;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -166,3 +305,4 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
     }
 }
 
+ */

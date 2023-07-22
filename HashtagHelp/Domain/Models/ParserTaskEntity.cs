@@ -7,7 +7,7 @@ namespace HashtagHelp.Domain.Models
         public Guid Id { get; set; } = Guid.NewGuid();
         public string InParserId { get; set; } = string.Empty;
         public List<ResearchedUserEntity> ResearchedUsers { get; set; } = new List<ResearchedUserEntity>();
-        public StatusParserTaskEnum Status { get; set; } = StatusParserTaskEnum.InProcess;
+        public StatusTaskEnum Status { get; set; } = StatusTaskEnum.InProcess;
     }
 }
 

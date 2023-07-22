@@ -22,7 +22,7 @@ if (connectionString != null)
         builder => builder.CommandTimeout(30));
     });
 
-builder.Services.AddScoped<IFunnelService, FunnelServiceStab>();
+builder.Services.AddScoped<IFunnelService, FunnelService>();
 builder.Services.AddScoped<IApiRequestService, InstaParserAPIRequestService>();
 builder.Services.AddScoped<IFollowersGetterService, RocketAPIFollowersGetterService>();
 builder.Services.AddScoped<IFollowingTagsGetterService, InstData2FollowingTagsGetterService>();

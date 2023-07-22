@@ -8,7 +8,10 @@ namespace HashtagHelp.Services.Implementations
 {
     public class DataRepository : IDataRepository
     {
+
         private readonly AppDbContext _context;
+
+        public IGoogleApiRequestService GoogleApiRequestService { get; set; }
 
         public DataRepository(AppDbContext context)
         {
@@ -88,5 +91,32 @@ namespace HashtagHelp.Services.Implementations
             }
             throw new InvalidOperationException("Invalid table or field name.");
         }
+
+        private async Task SetDeletionDate()
+        {
+            await GoogleApiRequestService.SetParameterAsync("G2", DateTime.Now.ToString());
+        }
+        // Ваш метод для вызова удаления старых записей
+        public async Task DeleteOldRecordsAsync(DateTime thresholdDate)
+        {
+            var oldRecords = _context.Hashtags.Where(r => r.CreatedDate < thresholdDate);
+            _context.Hashtags.RemoveRange(oldRecords);
+            await _context.SaveChangesAsync();
+        }
+
+        // Метод для проверки и вызова удаления старых записей
+        public async Task CheckAndDeleteOldRecordsAsync()
+        {
+            DateTime now = DateTime.Now;
+            DateTime thresholdDate = now.AddDays(-30);
+            var lastDeletionTime = DateTime.Parse(await GoogleApiRequestService.GetParameterAsync("G2"));
+            var pastAfterDeletionHours = now - lastDeletionTime;
+            if (pastAfterDeletionHours > TimeSpan.FromHours(24)) 
+            {
+                await DeleteOldRecordsAsync(thresholdDate);
+                await SetDeletionDate();
+            }
+        }
+
     }
 }
