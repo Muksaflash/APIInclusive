@@ -4,6 +4,8 @@ namespace HashtagHelp.Services.Interfaces
 {
     public interface IDataRepository
     {
+        IGoogleApiRequestService GoogleApiRequestService { get; set; }
+
         void AddGeneralTask(GeneralTaskEntity generalTask);
 
         void UpdateGeneralTask(GeneralTaskEntity generalTask);
@@ -23,5 +25,7 @@ namespace HashtagHelp.Services.Interfaces
         bool DoesFieldExist(string tableName, string fieldName);
 
         Task<TEntity> GetEntityByFieldValueAsync<TEntity>(string tableName, string fieldName, string fieldValue) where TEntity : class;
+
+        Task CheckAndDeleteOldRecordsAsync();
     }
 }

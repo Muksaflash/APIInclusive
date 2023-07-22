@@ -37,7 +37,7 @@ namespace HashtagHelp.Services.Implementations
             int bottomBorder = freqDict.Count / 1000 + 5;
             if (bottomBorder > 50) bottomBorder = 50;
             var newFreqDict = freqDict.Where(x => x.Value >= bottomBorder).ToDictionary(x => x.Key, x => x.Value);
-            while(newFreqDict.Count < 100)
+            while (newFreqDict.Count < 100)
             {
                 bottomBorder -= 1;
                 newFreqDict = freqDict.Where(x => x.Value >= bottomBorder).ToDictionary(x => x.Key, x => x.Value);
@@ -45,31 +45,8 @@ namespace HashtagHelp.Services.Implementations
             freqDict = newFreqDict;
         }
 
-        public (List<string>, string) CreateFunnels(FunnelEntity model, List<HashtagEntity> listHashtags)
+        public List<string> CreateFunnels(FunnelEntity model, List<HashtagEntity> listHashtags)
         {
-           /*  ILookup<int, string> hashtagFreq = listHashtags
-                .Where(line => !string.IsNullOrEmpty(line))
-                .ToLookup
-                (line =>
-                {
-                    int key;
-                    try
-                    {
-                        key = int.Parse(string.Join("", line.Split('\t')[1].Where(symbol => char.IsDigit(symbol))));
-                    }
-                    catch
-                    {
-                        return -1;
-                    }
-                    return key;
-                },
-                line =>
-                {
-                    string value;
-                    value = line.Split('\t')[0];
-                    return value;
-                }); */
-
             ILookup<long, string> hashtagFreq = listHashtags.ToLookup(hashtag => long.Parse(hashtag.MediaCount), hashtag => hashtag.Name);
 
             var floorFreq = model.MinTagMediaCount;
@@ -81,52 +58,44 @@ namespace HashtagHelp.Services.Implementations
             var count = hashtagFreq1.ToList().Count;
             var hashtagFreq2 = hashtagFreq1.ToDictionary(group => group.Key, group => group.ToList())
                 .OrderBy(group => group.Key);
-            long nextBound;
+            long nextBound = floorFreq;
 
             long hashtagFunnelCount;
-            int fullFunnelCount = 0;
-            int funnelCount = 0;
+            int fullPacksCount = 0;
             bool isDictEmpty = false;
             if (count == 0) isDictEmpty = true;
 
-            var fileName = "Воронка.txt";
-            var stringsList = new List<string>();
+            var hashtagsLines = new List<string>();
+            var funnelsCount = 0;
 
             while (!isDictEmpty)
             {
-                hashtagFunnelCount = hashtagFunnelNumber;
                 nextBound = floorFreq;
-                stringsList.Add(Environment.NewLine);
+                hashtagFunnelCount = hashtagFunnelNumber;
+                funnelsCount++;
+                hashtagsLines.Add($"Воронка {funnelsCount}:\n\n");
                 foreach (var item in hashtagFreq2)
                 {
-                    if (item.Key >= nextBound)
+                    if (item.Key >= nextBound && item.Value.Count != 0)
                     {
-                        if (item.Value.Count != 0)
+                        var hashtagString = $"#{item.Value[0]}\n";
+                        hashtagsLines.Add(hashtagString);
+                        item.Value.RemoveAt(0);
+                        nextBound = item.Key + freqStep;
+
+                        if (--hashtagFunnelCount == 0)
                         {
-                            var hashtagString = item.Value[0] + '\t' + item.Key + '\n';
-                            stringsList.Add(hashtagString);
-                            item.Value.RemoveAt(0);
-                            nextBound = item.Key + freqStep;
-                            if (--hashtagFunnelCount == 0)
-                            {
-                                fullFunnelCount++;
-                                break;
-                            }
+                            fullPacksCount++;
+                            hashtagFunnelCount = hashtagFunnelNumber;
+                            hashtagsLines.Add("\n");
                         }
                     }
                 }
-                foreach (var item in hashtagFreq2)
-                {
-                    if (item.Value.Count != 0)
-                    {
-                        isDictEmpty = false;
-                        break;
-                    }
-                    isDictEmpty = true;
-                }
-                funnelCount++;
+
+                isDictEmpty = !hashtagFreq2.Any(item => item.Value.Count != 0);
+                hashtagsLines.Add("\n");
             }
-            
+
             var information = string.Empty;
             if (count == 0)
             {
@@ -135,12 +104,12 @@ namespace HashtagHelp.Services.Implementations
                     " Работа завершена!";
             }
             else
-                information = $"Создано " + fullFunnelCount + " воронок по " + hashtagFunnelNumber
-                    + " хэштегов и ещё " +
-                    +funnelCount + " поменьше" + '\n' + '\n' +
-                    "Хештеги записаны в файл \"" + fileName + "\"" +
-                    "Работа успешно завершена!";
-            return (stringsList, information) ;
+                information = $"Создано " + funnelsCount + " воронок всего с "+fullPacksCount+ " паками по " + hashtagFunnelNumber
+                    + " хэштегов и, возможно, есть паки меньше." + '\n'+
+                    "Работа успешно завершена!\n\n";
+            hashtagsLines.Insert(0, information);
+
+            return hashtagsLines;
         }
     }
 }

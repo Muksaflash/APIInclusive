@@ -15,7 +15,7 @@ namespace HashtagHelp.Services.Implementations.InstagramData
             RocketAPIRequestService APIRequestService = new RocketAPIRequestService();
             //var UserId = await APIRequestService.GetIdAPIAsync(apiKey, researchedUser.NickName);
             var userId = researchedUser.SocialId.ToString();
-            var followers = await APIRequestService.GetObjectsAPIAsync(apiKey, userId);
+            var followers = await APIRequestService.GetObjectsAPIAsync(userId);
             var resultFollowers = followers.Select(follower => new FollowerEntity()
             {
                 SocialId = follower.Pk,

@@ -18,7 +18,7 @@ namespace HashtagHelp.Domain.Models
 
         public long HashtagsNumber { get; set; }
 
-        public List<string>? FunnelText { get; set; }
+        public string? FunnelText { get; set; } = string.Empty;
 
         public FunnelEntity(long minTagMediaCount, long maxTagMediaCount, long minMediaCountInterval, 
             long hashtagsNumber)

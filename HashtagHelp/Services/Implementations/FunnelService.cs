@@ -1,11 +1,13 @@
 ﻿using HashtagHelp.Domain.Models;
 using HashtagHelp.Domain.Enums;
 using HashtagHelp.Services.Interfaces;
+using HashtagHelp.Domain.RequestModels;
+
 namespace HashtagHelp.Services.Implementations
 {
     public class FunnelService : IFunnelService
     {
-        public IApiRequestService ApiRequestService { get; set; }
+        public IApiRequestService InstaParserApiRequestService { get; set; }
         public IHashtagApiRequestService HashtagApiRequestService { get; set; }
         public IProcessLogger ProcessLogger { get; set; }
         public IParserDataService ParserDataService { get; set; }
@@ -13,14 +15,35 @@ namespace HashtagHelp.Services.Implementations
         public IGoogleApiRequestService GoogleApiRequestService { get; set; }
         private Timer followersTimer;
         private Timer followingTagsTimer;
-        private string apiKey = "eMjDt55n11RuhCa7";
-        private string hashtagApiKey = "a8f3f7e68amsh2703987539fa87cp17165ajsn6d5c6feed1e9";
+        private string instaParserKey;
+        private string instaParserUrl;
+        private string hashtagApiKey;
         private GeneralTaskEntity _generalTask;
-        private double minutes  = 1;
-        private long minTagMediaCount  = 1000;
-        private long maxTagMediaCount  = 500000;
-        private long minMediaCountInterval = 5000;
-        private long hashtagsNumber = 30;
+        private double checkTimerMinutes;
+        private long minTagMediaCount;
+        private long maxTagMediaCount;
+        private long minMediaCountInterval;
+        private long hashtagsNumber;
+        private TaskCompletionSource<bool> _funnelCompletionSource = new();
+
+        public async Task SetConfigure(FunnelRequestModel requestModel)
+        {
+            GoogleApiRequestService.HashtagArea = requestModel.HashtagArea;
+            var hashtagAreas = await GoogleApiRequestService.GetAreasListAsync();
+            if (!hashtagAreas.Contains(requestModel.HashtagArea)) 
+            {
+                throw new Exception("Неправильно указана ниша");
+            }
+            var configData = await GoogleApiRequestService.GetAllConfigSheetData();
+            instaParserKey = configData[1];
+            hashtagApiKey = configData[3];
+            instaParserUrl = configData[2];
+            checkTimerMinutes = double.Parse(configData[5]);
+            minTagMediaCount = long.Parse(configData[11]);
+            maxTagMediaCount = long.Parse(configData[21]);
+            minMediaCountInterval = long.Parse(configData[31]);
+            hashtagsNumber = long.Parse(configData[41]);
+        }
 
         public async Task AddFollowersTaskAsync(GeneralTaskEntity generalTask)
         {
@@ -28,8 +51,8 @@ namespace HashtagHelp.Services.Implementations
             _generalTask = generalTask;
             var userNames = _generalTask.CollectionTask.ResearchedUsers
                 .Select(researchedUser => researchedUser.NickName).ToList();
-            _generalTask.CollectionTask.InParserId = await ApiRequestService
-                .AddFollowersTaskAPIAsync(apiKey, userNames);
+            _generalTask.CollectionTask.InParserId = await InstaParserApiRequestService
+                .AddFollowersTaskAPIAsync(instaParserKey, userNames, instaParserUrl);
             DataRepository.UpdateParserTask(_generalTask.CollectionTask);
             await DataRepository.SaveChangesAsync();
             StartCheckingTimer(_generalTask.CollectionTask, ref followersTimer, CheckFollowersTaskStatusAsync);
@@ -41,12 +64,9 @@ namespace HashtagHelp.Services.Implementations
             var userNames = _generalTask.CollectionTask.ResearchedUsers
                 .Select(researchedUser => researchedUser.NickName).ToList();
             var taskId = _generalTask.CollectionTask.InParserId;
-            _generalTask.FiltrationTask = new ParserTaskEntity
-            {
-                InParserId = await ApiRequestService
-                .AddFollowingTagsTaskAPIAsync(apiKey, taskId, userNames)
-            };
-            DataRepository.AddParserTask(_generalTask.FiltrationTask);
+            _generalTask.FiltrationTask.InParserId = await InstaParserApiRequestService
+                .AddFollowingTagsTaskAPIAsync(instaParserKey, taskId, userNames, instaParserUrl);
+            DataRepository.UpdateParserTask(_generalTask.FiltrationTask);
             await DataRepository.SaveChangesAsync();
             StartCheckingTimer(_generalTask.FiltrationTask, ref followingTagsTimer, CheckFollowingTagsTaskStatusAsync);
             await Task.CompletedTask;
@@ -76,31 +96,39 @@ namespace HashtagHelp.Services.Implementations
         {
             try
             {
-                var tagsTaskContent = await ApiRequestService.GetTagsTaskContentAPIAsync(apiKey, _generalTask.FiltrationTask.InParserId);
+                var tagsTaskContent = await InstaParserApiRequestService
+                    .GetTagsTaskContentAPIAsync(instaParserKey, _generalTask.FiltrationTask.InParserId, instaParserUrl);
                 var tagFreq = ParserDataService.RedoFiles(tagsTaskContent);
                 ValidateTagFreq(tagFreq);
                 ParserDataService.RareFreqTagsRemove(tagFreq);
                 var hashtags = await ProcessHashtagsAsync(tagFreq);
                 await SaveHashtagsAsync(hashtags);
-                var areaHashtags = await GoogleApiRequestService.GetDataAsync(_generalTask.HashtagArea);
+                var areaHashtags = await GoogleApiRequestService.GetAreaHashtags();
                 var areaHashtagsEntities = await ProcessHashtagsAsync(areaHashtags.ToDictionary(x => x, x => 50));
                 hashtags.AddRange(areaHashtagsEntities);
                 await SaveHashtagsAsync(areaHashtagsEntities);
                 var funnel = new FunnelEntity(minTagMediaCount, maxTagMediaCount, minMediaCountInterval, hashtagsNumber);
-                funnel.FunnelText =  ParserDataService.CreateFunnels(funnel, hashtags).Item1;
+                var funelLines = ParserDataService.CreateFunnels(funnel, hashtags);
+                funnel.FunnelText = string.Join("", funelLines);
+                _generalTask.HashtagFunnel = funnel;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
                 ProcessLogger.Log(ex.Message);
+                _funnelCompletionSource.SetException(ex);
             }
+        }
+        public async Task WaitCompletionGeneralTask()
+        {
+            await _funnelCompletionSource.Task;
         }
 
         private void ValidateTagFreq(Dictionary<string, int> tagFreq)
         {
             if (tagFreq.Count < 100)
             {
-                _generalTask.FiltrationTask.Status = StatusParserTaskEnum.Error;
+                _generalTask.FiltrationTask.Status = StatusTaskEnum.Error;
                 throw new Exception("Too few hashtags have followers of researched user(s)");
             }
         }
@@ -138,7 +166,7 @@ namespace HashtagHelp.Services.Implementations
 
         private void StartCheckingTimer(ParserTaskEntity parserTask, ref Timer timer, Func<ParserTaskEntity, Task> timerAction)
         {
-            var interval = TimeSpan.FromMinutes(minutes);
+            var interval = TimeSpan.FromMinutes(checkTimerMinutes);
             timer = new Timer(async state =>
             {
                 await timerAction(parserTask);
@@ -149,15 +177,16 @@ namespace HashtagHelp.Services.Implementations
         {
             try
             {
-                var taskStatus = await ApiRequestService.GetTaskStatusAsync(apiKey, parserTask.InParserId);
+                var taskStatus = await InstaParserApiRequestService
+                    .GetTaskStatusAsync(instaParserKey, parserTask.InParserId, instaParserUrl);
                 Console.WriteLine(taskStatus.tid_status);
                 if (taskStatus.tid_status == "completed")
                 {
                     await followersTimer.DisposeAsync();
                     Console.WriteLine("Приступаем к парсингу подписок подпищиков");
                     await AddFollowingTagsTaskAsync();
-                    _generalTask.CollectionTask.Status = StatusParserTaskEnum.Completed;
-                    DataRepository.AddParserTask(_generalTask.CollectionTask);
+                    _generalTask.CollectionTask.Status = StatusTaskEnum.Completed;
+                    DataRepository.UpdateParserTask(_generalTask.CollectionTask);
                     await DataRepository.SaveChangesAsync();
                 }
             }
@@ -172,16 +201,18 @@ namespace HashtagHelp.Services.Implementations
         {
             try
             {
-                var taskStatus = await ApiRequestService.GetTaskStatusAsync(apiKey, parserTask.InParserId);
+                var taskStatus = await InstaParserApiRequestService
+                    .GetTaskStatusAsync(instaParserKey, parserTask.InParserId, instaParserUrl);
                 Console.WriteLine(taskStatus.tid_status);
                 if (taskStatus.tid_status == "completed")
                 {
                     await followingTagsTimer.DisposeAsync();
                     Console.WriteLine("Приступаем к созданию воронки");
                     await FunnelCreateAsync();
-                    _generalTask.FiltrationTask.Status = StatusParserTaskEnum.Completed;
-                    DataRepository.AddParserTask(_generalTask.FiltrationTask);
+                    _generalTask.FiltrationTask.Status = StatusTaskEnum.Completed;
+                    DataRepository.UpdateParserTask(_generalTask.FiltrationTask);
                     await DataRepository.SaveChangesAsync();
+                    _funnelCompletionSource.SetResult(true);
                 }
             }
             catch (Exception ex)

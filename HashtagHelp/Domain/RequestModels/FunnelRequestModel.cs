@@ -2,7 +2,7 @@
 
 namespace HashtagHelp.Domain.RequestModels
 {
-    public class UserRequestModel
+    public class FunnelRequestModel
     {
         public string NickName { get; set; } = string.Empty;
         public string Id { get; set; } = string.Empty;

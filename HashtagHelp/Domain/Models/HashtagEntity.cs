@@ -9,5 +9,7 @@
         public string InstagramId { get; set; } = string.Empty;
 
         public string MediaCount { get; set; } = string.Empty;
+
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
     }
 }
