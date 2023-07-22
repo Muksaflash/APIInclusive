@@ -1,4 +1,4 @@
-#HashtagHelp Project (At the testing stage) [version 0.8]
+# HashtagHelp Project (At the testing stage) [version 0.8]
 
  ##  ##
 ########
