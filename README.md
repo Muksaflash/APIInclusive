@@ -4,6 +4,9 @@
 
 HashtagHelp is a convenient and powerful web application designed to assist in creating effective hashtag funnels for your content on social media platforms. With this application, you can easily discover the most relevant and popular hashtags for your niche, and boost the visibility of your content on platforms like Instagram.
 
+<img width="1633" alt="Снимок экрана 2023-08-01 в 20 16 28" src="https://github.com/Muksaflash/APIInclusive/assets/67598186/0cb9aa84-ce73-406e-9cc9-b61daaa11793">
+
+
 ### Key Features:
 
 - Automated Hashtag Discovery: HashtagHelp automatically finds the most suitable and popular hashtags for your content based on keywords and niche.
