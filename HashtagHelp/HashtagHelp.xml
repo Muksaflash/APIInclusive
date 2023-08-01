@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>HashtagHelp</name>
+    </assembly>
+    <members>
+        <member name="M:HashtagHelp.Controllers.FunnelController.PostFunnelRequest(HashtagHelp.Domain.RequestModels.FunnelRequestModel)">
+            <summary>
+             Init
+            </summary>
+            <param name="requestData">kjp</param>
+            <returns>www</returns>
+        </member>
+    </members>
+</doc>

@@ -1,6 +1,4 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
-using HashtagHelp.Domain.ExternalApiModels.InstaParser;
+﻿using HashtagHelp.Domain.ExternalApiModels.InstaParser;
 using HashtagHelp.Services.Interfaces;
 
 namespace HashtagHelp.Services.Implementations.InstaParser
@@ -89,12 +87,6 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             {
                 var namesString = string.Join(",", userNames);
                 var taskName = "Subscribers collection of: " + namesString;
-
-                Console.WriteLine($"url: {url}");
-                Console.WriteLine($"apiKey: {apiKey}");
-                Console.WriteLine($"taskName: {taskName}");
-                Console.WriteLine($"namesString: {namesString}");
-
                 string apiUrl = url + "api.php?key=" + apiKey + "&mode=create&type=p1&name=" + taskName + "&links=" + namesString;
                 HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
                 response.EnsureSuccessStatusCode();

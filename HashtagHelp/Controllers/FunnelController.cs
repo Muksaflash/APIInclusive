@@ -62,7 +62,7 @@ namespace HashtagHelp.Controllers
             _dataRepository.GoogleApiRequestService = _googleApiRequestService;
         }
 
-        [HttpGet]
+        /* [HttpGet]
         public async Task<ActionResult<IEnumerable<ResearchedUserEntity>>> GetResearchedUsers()
         {
             if (_context.ResearchedUsers == null)
@@ -87,8 +87,13 @@ namespace HashtagHelp.Controllers
             }
 
             return researchedUser;
-        }
+        } */
 
+        /// <summary>
+        ///  Init
+        /// </summary>
+        /// <param name="requestData">kjp</param>
+        /// <returns>www</returns>
         [HttpPost]
         public async Task<ActionResult<string>> PostFunnelRequest([FromBody] FunnelRequestModel requestData)
         {
