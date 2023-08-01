@@ -363,5 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # Mac os 
-.DS_Store
-HashtagHelp/.DS_Store
+*DS_Store
+
+#private files
+hashtaghelp-13d38e1b1284.json
