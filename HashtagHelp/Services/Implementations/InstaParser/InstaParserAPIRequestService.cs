@@ -26,6 +26,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 }
                 catch (Exception ex) when (IsRetryableError(ex) && attempt < maxAttempts)
                 {
+                    Console.WriteLine("Повторяемая ошибка обнаружена");
                     await HandleRetryableError(ex, attempt, maxBackoffTime);
                 }
                 catch (Exception ex) when (!IsRetryableError(ex))
@@ -54,12 +55,12 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             Console.WriteLine($"Повторная попытка через {backoffTime} мс.");
             await Task.Delay(backoffTime);
         }
-        
+
         public async Task<string> GetTagsTaskContentAPIAsync(string apiKey, string FollowingTagsTaskId, string url)
         {
             return await ExecuteWithRetry(async () =>
             {
-                string apiUrl = $"{url}api.php?key={apiKey}&mode=result&tid={FollowingTagsTaskId}";
+                string apiUrl = url + "api.php?key=" + apiKey + "&mode=result&tid=" + FollowingTagsTaskId;
                 HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
                 response.EnsureSuccessStatusCode();
                 string responseBody = await response.Content.ReadAsStringAsync();
@@ -67,14 +68,13 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             });
         }
 
-        // Пример для метода AddFollowingTagsTaskAPIAsync
         public async Task<string> AddFollowingTagsTaskAPIAsync(string apiKey, string FollowersTaskId, List<string> researchedUsers, string url)
         {
             return await ExecuteWithRetry(async () =>
             {
                 var namesString = string.Join(",", researchedUsers);
                 var taskName = "Subscribers Tags filtration of: " + " " + namesString;
-                string apiUrl = $"{url}api.php?key={apiKey}&mode=create&type=f1&name={taskName}&links={FollowersTaskId}&dop=7";
+                string apiUrl = url + "api.php?key=" + apiKey + "&mode=create&type=f1&name=" + taskName + "&links=" + FollowersTaskId + "&dop=7";
                 HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
                 response.EnsureSuccessStatusCode();
                 string responseBody = await response.Content.ReadAsStringAsync();
@@ -88,11 +88,22 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             return await ExecuteWithRetry(async () =>
             {
                 var namesString = string.Join(",", userNames);
-                var taskName = "Subscribers collection of: " + " " + namesString;
-                string apiUrl = $"{url}api.php?key={apiKey}&mode=create&type=p1&name={taskName}&links={namesString}";
+                var taskName = "Subscribers collection of: " + namesString;
+
+                Console.WriteLine($"url: {url}");
+                Console.WriteLine($"apiKey: {apiKey}");
+                Console.WriteLine($"taskName: {taskName}");
+                Console.WriteLine($"namesString: {namesString}");
+
+                string apiUrl = url + "api.php?key=" + apiKey + "&mode=create&type=p1&name=" + taskName + "&links=" + namesString;
                 HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
                 response.EnsureSuccessStatusCode();
                 string responseBody = await response.Content.ReadAsStringAsync();
+                (bool hasError, string errorMessage) = GetErrorInfo(responseBody);
+                if (hasError)
+                {
+                    throw new Exception(errorMessage);
+                }
                 var taskId = GetTaskId(responseBody);
                 return taskId;
             });
@@ -102,15 +113,15 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         {
             return await ExecuteWithRetry(async () =>
             {
-                string apiUrl = $"{url}api.php?key={apiKey}&mode=status&tid={taskId}";
+                string apiUrl = url + "api.php?key=" + apiKey + "&mode=status&tid=" + taskId;
                 HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
                 response.EnsureSuccessStatusCode();
                 TaskStatusResponse? taskStatus = await response.Content.ReadFromJsonAsync<TaskStatusResponse>();
-                return taskStatus; 
+                return taskStatus;
             });
         }
 
-        private string GetTaskId(string response) 
+        private string GetTaskId(string response)
         {
             string[] parts = response.Split(',');
             string taskId = string.Empty;
@@ -121,82 +132,26 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                     taskId = part[7..];
                     break;
                 }
-            }                
+            }
             taskId = new string(taskId.Where(char.IsDigit).ToArray());
             return taskId;
         }
-    }
-}
 
-/* using HashtagHelp.Domain.ExternalApiModels.InstaParser;
-using HashtagHelp.Services.Interfaces;
-
-namespace HashtagHelp.Services.Implementations.InstaParser
-{
-    public class InstaParserAPIRequestService : IApiRequestService
-    {
-        private readonly HttpClient _httpClient;
-
-        public InstaParserAPIRequestService()
+        private (bool HasError, string ErrorMessage) GetErrorInfo(string response)
         {
-            _httpClient = new HttpClient();
-        }
-        public async Task<string> GetTagsTaskContentAPIAsync(string apiKey, string FollowingTagsTaskId, string url)
-        {
-            string apiUrl = $"{url}api.php?key={apiKey}&mode=result&tid={FollowingTagsTaskId}";
-            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            return responseBody;
-        }
-        public async Task<string> AddFollowingTagsTaskAPIAsync(string apiKey, string FollowersTaskId, List<string> researchedUsers, string url)
-        {
-            var namesString = string.Join(",", researchedUsers);
-            var taskName = "Subscribers Tags filtration of: " + " " + namesString;
-            string apiUrl = $"{url}api.php?key={apiKey}&mode=create&type=f1&name={taskName}&links={FollowersTaskId}&dop=7";
-            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            var taskId = GetTaskId(responseBody);
-            return taskId;
-        }
-
-        public async Task<string> AddFollowersTaskAPIAsync(string apiKey, List<string> userNames, string url)
-        {
-            var namesString = string.Join(",", userNames);
-            var taskName = "Subscribers collection of: " + " " + namesString;
-            string apiUrl = $"{url}api.php?key={apiKey}&mode=create&type=p1&name={taskName}&links={namesString}";
-            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
-            response.EnsureSuccessStatusCode();
-            string responseBody = await response.Content.ReadAsStringAsync();
-            var taskId = GetTaskId(responseBody);
-            return taskId;
-        }
-
-        public async Task<TaskStatusResponse> GetTaskStatusAsync(string apiKey, string taskId, string url)
-        {
-            string apiUrl = $"{url}api.php?key={apiKey}&mode=status&tid={taskId}";
-            HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
-            response.EnsureSuccessStatusCode();
-            TaskStatusResponse? taskStatus = await response.Content.ReadFromJsonAsync<TaskStatusResponse>();
-            return taskStatus; 
-        }
-
-        private string GetTaskId(string response) 
-        {
-            string[] parts = response.Split(',');
-            string taskId = string.Empty;
-            foreach (string part in parts)
+            int startIndex = response.IndexOf("\"status\":\"error\",\"text\":\"");
+            if (startIndex != -1)
             {
-                if (part.StartsWith("\"tid\":\""))
+                startIndex += "\"status\":\"error\",\"text\":\"".Length;
+                int endIndex = response.IndexOf("\"", startIndex);
+                if (endIndex != -1)
                 {
-                    taskId = part[7..];
-                    break;
+                    string errorMessage = response.Substring(startIndex, endIndex - startIndex);
+                    return (true, errorMessage);
                 }
-            }                
-            taskId = new string(taskId.Where(char.IsDigit).ToArray());
-            return taskId;
+            }
+
+            return (false, string.Empty);
         }
     }
 }
- */
