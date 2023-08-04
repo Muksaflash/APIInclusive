@@ -35,7 +35,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         public async Task<List<string>> GetAllConfigSheetData()
         {
             string range = $"{configGoogleSheet}!A2:Z";
-            return await ExecuteWithRetry(maxAttempts, async () =>
+            return await ExecuteWithRetryAsync(maxAttempts, async () =>
             {
                 SpreadsheetsResource.ValuesResource.GetRequest request =
                     sheetsService.Spreadsheets.Values.Get(configGoogleSpreadsheetID, range);
@@ -62,7 +62,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         {
             string sheetName = HashtagArea;
             string range = $"{sheetName}!A1:B";
-            return await ExecuteWithRetry(maxAttempts, async () =>
+            return await ExecuteWithRetryAsync(maxAttempts, async () =>
             {
                 SpreadsheetsResource.ValuesResource.GetRequest request =
                     sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
@@ -91,7 +91,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         public async Task<List<string>> GetAreasListAsync()
         {
             string range = $"{configGoogleSheet}!A2:A";
-            return await ExecuteWithRetry(maxAttempts, async () =>
+            return await ExecuteWithRetryAsync(maxAttempts, async () =>
             {
                 SpreadsheetsResource.ValuesResource.GetRequest request =
                     sheetsService.Spreadsheets.Values.Get(configGoogleSpreadsheetID, range);
@@ -117,7 +117,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         public async Task<string> GetParameterAsync(string cellAddress)
         {
             string range = $"{configGoogleSheet}!{cellAddress}";
-            return await ExecuteWithRetry(maxAttempts, async () =>
+            return await ExecuteWithRetryAsync(maxAttempts, async () =>
             {
                 SpreadsheetsResource.ValuesResource.GetRequest request =
                     sheetsService.Spreadsheets.Values.Get(configGoogleSpreadsheetID, range);
@@ -139,7 +139,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         public async Task SetParameterAsync(string cellAddress, string newValue)
         {
             string range = $"{configGoogleSheet}!{cellAddress}";
-            await ExecuteWithRetry(maxAttempts, async () =>
+            await ExecuteWithRetryAsync(maxAttempts, async () =>
             {
                 ValueRange updateRequest = new()
                 {
@@ -153,7 +153,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             });
         }
 
-        private async Task<T> ExecuteWithRetry<T>(int maxAttempts, Func<Task<T>> action)
+        private async Task<T> ExecuteWithRetryAsync<T>(int maxAttempts, Func<Task<T>> action)
         {
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {

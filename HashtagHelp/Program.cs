@@ -7,11 +7,8 @@ using HashtagHelp.Services.Implementations.RocketAPI;
 using HashtagHelp.Services.Implementations.InstaParser;
 using HashtagHelp.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -22,7 +19,6 @@ if (connectionString != null)
         options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
         builder => builder.CommandTimeout(30));
     });
-
 builder.Services.AddScoped<IFunnelService, FunnelService>();
 builder.Services.AddScoped<IApiRequestService, InstaParserAPIRequestService>();
 builder.Services.AddScoped<IFollowersGetterService, RocketAPIFollowersGetterService>();
@@ -38,7 +34,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -54,4 +49,17 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.Run(async context =>
+{
+    // Получаем DI контейнер приложения
+    var serviceProvider = app.Services;
+
+    // Получаем экземпляр IFunnelService из DI контейнера
+    var funnelService = serviceProvider.GetRequiredService<IFunnelService>();
+
+    // Делаем что-то с результатом (например, отправляем в ответ клиенту)
+    // ...
+
+    // Завершаем запрос
+    await context.Response.CompleteAsync();
+});

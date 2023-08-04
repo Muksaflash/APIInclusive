@@ -2,7 +2,6 @@
 using HashtagHelp.Domain.Models;
 using HashtagHelp.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using HashtagHelp.Domain.RequestModels;
 
 namespace HashtagHelp.Controllers
@@ -62,33 +61,6 @@ namespace HashtagHelp.Controllers
             _dataRepository.GoogleApiRequestService = _googleApiRequestService;
         }
 
-        /* [HttpGet]
-        public async Task<ActionResult<IEnumerable<ResearchedUserEntity>>> GetResearchedUsers()
-        {
-            if (_context.ResearchedUsers == null)
-            {
-                return NotFound();
-            }
-            return await _context.ResearchedUsers.ToListAsync();
-        }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<ResearchedUserEntity>> GetResearchedUser(uint id)
-        {
-            if (_context.ResearchedUsers == null)
-            {
-                return NotFound();
-            }
-            var researchedUser = await _context.ResearchedUsers.FindAsync(id);
-
-            if (researchedUser == null)
-            {
-                return NotFound();
-            }
-
-            return researchedUser;
-        } */
-
         /// <summary>
         ///  Init
         /// </summary>
@@ -123,20 +95,24 @@ namespace HashtagHelp.Controllers
                 generalTask.FiltrationTask = filtrationTask;
                 generalTask.HashtagArea = requestData.HashtagArea;
                 generalTask.User = user;
-                await _funnelCreatorService.SetConfigure(requestData);
+                await _funnelCreatorService.SetConfigure(generalTask);
                 await _dataRepository.CheckAndDeleteOldRecordsAsync();
                 _dataRepository.AddGeneralTask(generalTask);
                 _dataRepository.AddParserTask(collectionTask);
                 _dataRepository.AddParserTask(filtrationTask);
                 _dataRepository.AddUser(user);
                 await _dataRepository.SaveChangesAsync();
-                await _funnelCreatorService.AddFollowersTaskAsync(generalTask);
+                await _funnelCreatorService.AddFollowersTaskAsync();
                 await _funnelCreatorService.WaitCompletionGeneralTask();
                 var funnelText = generalTask.HashtagFunnel.FunnelText;
                 return Ok(funnelText);
             }
             catch (Exception ex)
             {
+                if (ex.Message == "paid subscription only")
+                {
+                    return Problem("не оплачен инста парсер");
+                }
                 return Problem(ex.Message);
             }
         }
