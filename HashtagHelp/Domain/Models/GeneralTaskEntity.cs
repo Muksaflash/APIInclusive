@@ -18,10 +18,10 @@ namespace HashtagHelp.Domain.Models
 
         public string HashtagArea { get; set; } = string.Empty;
 
-        public string? InstaParserCollectionKey { get; set; }
+        public StatusTaskEnum Status { get; set; } = StatusTaskEnum.Initiated;
 
-        public string? InstaParserFiltrationKey { get; set; }
-
-        public StatusTaskEnum Status { get; set; } = StatusTaskEnum.InProcess;
+        public string MainParserApiKey { get; set; } = string.Empty;
+        
+        public string ParserUrl { get; set; } = string.Empty;
     }
 }

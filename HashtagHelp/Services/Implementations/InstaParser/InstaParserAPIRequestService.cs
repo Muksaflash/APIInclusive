@@ -14,7 +14,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             _httpClient = new HttpClient();
         }
 
-        private async Task<T> ExecuteWithRetry<T>(Func<Task<T>> action)
+        private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> action)
         {
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
@@ -56,19 +56,24 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task<string> GetTagsTaskContentAPIAsync(string apiKey, string FollowingTagsTaskId, string url)
         {
-            return await ExecuteWithRetry(async () =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 string apiUrl = url + "api.php?key=" + apiKey + "&mode=result&tid=" + FollowingTagsTaskId;
                 HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
                 response.EnsureSuccessStatusCode();
                 string responseBody = await response.Content.ReadAsStringAsync();
+                (bool hasError, string errorMessage) = GetErrorInfo(responseBody);
+                if (hasError)
+                {
+                    throw new Exception(errorMessage);
+                }
                 return responseBody;
             });
         }
 
         public async Task<string> AddFollowingTagsTaskAPIAsync(string apiKey, string FollowersTaskId, List<string> researchedUsers, string url)
         {
-            return await ExecuteWithRetry(async () =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 var namesString = string.Join(",", researchedUsers);
                 var taskName = "Subscribers Tags filtration of: " + " " + namesString;
@@ -76,6 +81,11 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
                 response.EnsureSuccessStatusCode();
                 string responseBody = await response.Content.ReadAsStringAsync();
+                (bool hasError, string errorMessage) = GetErrorInfo(responseBody);
+                if (hasError)
+                {
+                    throw new Exception(errorMessage);
+                }
                 var taskId = GetTaskId(responseBody);
                 return taskId;
             });
@@ -83,7 +93,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task<string> AddFollowersTaskAPIAsync(string apiKey, List<string> userNames, string url)
         {
-            return await ExecuteWithRetry(async () =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 var namesString = string.Join(",", userNames);
                 var taskName = "Subscribers collection of: " + namesString;
@@ -103,11 +113,17 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task<TaskStatusResponse> GetTaskStatusAsync(string apiKey, string taskId, string url)
         {
-            return await ExecuteWithRetry(async () =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 string apiUrl = url + "api.php?key=" + apiKey + "&mode=status&tid=" + taskId;
                 HttpResponseMessage response = await _httpClient.GetAsync(apiUrl);
                 response.EnsureSuccessStatusCode();
+                string responseBody = await response.Content.ReadAsStringAsync();
+                (bool hasError, string errorMessage) = GetErrorInfo(responseBody);
+                if (hasError)
+                {
+                    throw new Exception(errorMessage);
+                }
                 TaskStatusResponse? taskStatus = await response.Content.ReadFromJsonAsync<TaskStatusResponse>();
                 return taskStatus;
             });
