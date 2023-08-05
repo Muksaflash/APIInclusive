@@ -12,7 +12,7 @@ namespace HashtagHelp.Services.Interfaces
 
         public IParserDataService ParserDataService { get; set; }
 
-        Task AddFollowersTaskAsync();
+        Task StartTaskChainAsync();
         
         public IProcessLogger ProcessLogger{ get; set; }
 
@@ -20,7 +20,7 @@ namespace HashtagHelp.Services.Interfaces
 
         public IDataRepository DataRepository { get; set; }
 
-        Task SetConfigure(GeneralTaskEntity generalTask);
+        Task SetConfigureAsync(GeneralTaskEntity generalTask);
 
         Task WaitCompletionGeneralTask();
     }

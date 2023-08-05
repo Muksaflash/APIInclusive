@@ -13,8 +13,8 @@ namespace HashtagHelp.Services.Implementations
         public IParserDataService ParserDataService { get; set; }
         public IDataRepository DataRepository { get; set; }
         public IGoogleApiRequestService GoogleApiRequestService { get; set; }
-        private Timer followersTimer;
-        private Timer followingTagsTimer;
+        private Timer collectionTimer;
+        private Timer filtrationTimer;
         private string instaParserKey;
         private string instaParserUrl;
         private string hashtagApiKey;
@@ -26,7 +26,7 @@ namespace HashtagHelp.Services.Implementations
         private long hashtagsNumber;
         private TaskCompletionSource<bool> _funnelCompletionSource = new();
 
-        public async Task SetConfigure(GeneralTaskEntity generalTask)
+        public async Task SetConfigureAsync(GeneralTaskEntity generalTask)
         {
             try
             {
@@ -66,18 +66,38 @@ namespace HashtagHelp.Services.Implementations
             }
         }
 
-        public async Task AddFollowersTaskAsync()
+        public async Task StartTaskChainAsync()
+        {
+            if (_generalTask.Status == StatusTaskEnum.Configured || _generalTask.Status == StatusTaskEnum.Collection)
+            {
+                await AddCollectionTaskAsync();
+            }
+            if (_generalTask.Status == StatusTaskEnum.Collected || _generalTask.Status == StatusTaskEnum.Filtration)
+            {
+                await AddFiltrationTaskAsync();
+            }
+            if (_generalTask.Status == StatusTaskEnum.Filtrated)
+            {
+                await FunnelCreateAsync();
+            }
+        }
+
+        private async Task AddCollectionTaskAsync()
         {
             try
             {
-                ProcessLogger.Log("App was started");
-                var userNames = _generalTask.CollectionTask.ResearchedUsers
-                    .Select(researchedUser => researchedUser.NickName).ToList();
-                _generalTask.CollectionTask.InParserId = await InstaParserApiRequestService
-                    .AddFollowersTaskAPIAsync(instaParserKey, userNames, instaParserUrl);
-                DataRepository.UpdateParserTask(_generalTask.CollectionTask);
-                await DataRepository.SaveChangesAsync();
-                StartCheckingTimer(_generalTask.CollectionTask, ref followersTimer, CheckFollowersTaskStatusAsync);
+                if (_generalTask.Status == StatusTaskEnum.Configured)
+                {
+                    var userNames = _generalTask.CollectionTask.ResearchedUsers
+                        .Select(researchedUser => researchedUser.NickName).ToList();
+                    _generalTask.CollectionTask.InParserId = await InstaParserApiRequestService
+                        .AddFollowersTaskAPIAsync(instaParserKey, userNames, instaParserUrl);
+                    _generalTask.Status = StatusTaskEnum.Collection;
+                    DataRepository.UpdateParserTask(_generalTask.CollectionTask);
+                    DataRepository.UpdateGeneralTask(_generalTask);
+                    await DataRepository.SaveChangesAsync();
+                }
+                StartCheckingTimer(_generalTask.CollectionTask, ref collectionTimer, CheckCollectionTaskStatusAsync);
                 await Task.CompletedTask;
             }
             catch (Exception ex)
@@ -87,18 +107,23 @@ namespace HashtagHelp.Services.Implementations
             }
         }
 
-        public async Task AddFollowingTagsTaskAsync()
+        public async Task AddFiltrationTaskAsync()
         {
             try
             {
-                var userNames = _generalTask.CollectionTask.ResearchedUsers
-                    .Select(researchedUser => researchedUser.NickName).ToList();
-                var taskId = _generalTask.CollectionTask.InParserId;
-                _generalTask.FiltrationTask.InParserId = await InstaParserApiRequestService
-                    .AddFollowingTagsTaskAPIAsync(instaParserKey, taskId, userNames, instaParserUrl);
-                DataRepository.UpdateParserTask(_generalTask.FiltrationTask);
-                await DataRepository.SaveChangesAsync();
-                StartCheckingTimer(_generalTask.FiltrationTask, ref followingTagsTimer, CheckFollowingTagsTaskStatusAsync);
+                if (_generalTask.Status == StatusTaskEnum.Collected)
+                {
+                    var userNames = _generalTask.CollectionTask.ResearchedUsers
+                        .Select(researchedUser => researchedUser.NickName).ToList();
+                    var taskId = _generalTask.CollectionTask.InParserId;
+                    _generalTask.FiltrationTask.InParserId = await InstaParserApiRequestService
+                        .AddFollowingTagsTaskAPIAsync(instaParserKey, taskId, userNames, instaParserUrl);
+                    _generalTask.Status = StatusTaskEnum.Filtration;
+                    DataRepository.UpdateParserTask(_generalTask.FiltrationTask);
+                    DataRepository.UpdateGeneralTask(_generalTask);
+                    await DataRepository.SaveChangesAsync();
+                }
+                StartCheckingTimer(_generalTask.FiltrationTask, ref filtrationTimer, CheckFiltrationTaskStatusAsync);
                 await Task.CompletedTask;
             }
             catch (Exception ex)
@@ -155,6 +180,7 @@ namespace HashtagHelp.Services.Implementations
                 var funelLines = ParserDataService.CreateFunnels(funnel, hashtags);
                 funnel.FunnelText = string.Join("", funelLines);
                 _generalTask.HashtagFunnel = funnel;
+                _funnelCompletionSource.SetResult(true);
             }
             catch (Exception ex)
             {
@@ -217,7 +243,7 @@ namespace HashtagHelp.Services.Implementations
             }, null, interval, interval);
         }
 
-        private async Task CheckFollowersTaskStatusAsync(ParserTaskEntity parserTask)
+        private async Task CheckCollectionTaskStatusAsync(ParserTaskEntity parserTask)
         {
             try
             {
@@ -226,12 +252,12 @@ namespace HashtagHelp.Services.Implementations
                 Console.WriteLine(taskStatus.tid_status);
                 if (taskStatus.tid_status == "completed")
                 {
-                    await followersTimer.DisposeAsync();
+                    await collectionTimer.DisposeAsync();
                     Console.WriteLine("Приступаем к парсингу подписок подпищиков");
-                    await AddFollowingTagsTaskAsync();
-                    _generalTask.CollectionTask.Status = StatusTaskEnum.Completed;
-                    DataRepository.UpdateParserTask(_generalTask.CollectionTask);
+                    _generalTask.Status = StatusTaskEnum.Collected;
+                    DataRepository.UpdateGeneralTask(_generalTask);
                     await DataRepository.SaveChangesAsync();
+                    await AddFiltrationTaskAsync();
                 }
             }
             catch (Exception ex)
@@ -241,7 +267,7 @@ namespace HashtagHelp.Services.Implementations
             }
         }
 
-        private async Task CheckFollowingTagsTaskStatusAsync(ParserTaskEntity parserTask)
+        private async Task CheckFiltrationTaskStatusAsync(ParserTaskEntity parserTask)
         {
             try
             {
@@ -250,13 +276,12 @@ namespace HashtagHelp.Services.Implementations
                 Console.WriteLine(taskStatus.tid_status);
                 if (taskStatus.tid_status == "completed")
                 {
-                    await followingTagsTimer.DisposeAsync();
+                    await filtrationTimer.DisposeAsync();
                     Console.WriteLine("Приступаем к созданию воронки");
-                    await FunnelCreateAsync();
-                    _generalTask.FiltrationTask.Status = StatusTaskEnum.Completed;
-                    DataRepository.UpdateParserTask(_generalTask.FiltrationTask);
+                    _generalTask.Status = StatusTaskEnum.Filtrated;
+                    DataRepository.UpdateGeneralTask(_generalTask);
                     await DataRepository.SaveChangesAsync();
-                    _funnelCompletionSource.SetResult(true);
+                    await FunnelCreateAsync();
                 }
             }
             catch (Exception ex)

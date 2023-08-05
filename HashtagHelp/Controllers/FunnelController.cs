@@ -95,14 +95,14 @@ namespace HashtagHelp.Controllers
                 generalTask.FiltrationTask = filtrationTask;
                 generalTask.HashtagArea = requestData.HashtagArea;
                 generalTask.User = user;
-                await _funnelCreatorService.SetConfigure(generalTask);
+                await _funnelCreatorService.SetConfigureAsync(generalTask);
                 await _dataRepository.CheckAndDeleteOldRecordsAsync();
                 _dataRepository.AddGeneralTask(generalTask);
                 _dataRepository.AddParserTask(collectionTask);
                 _dataRepository.AddParserTask(filtrationTask);
                 _dataRepository.AddUser(user);
                 await _dataRepository.SaveChangesAsync();
-                await _funnelCreatorService.AddFollowersTaskAsync();
+                await _funnelCreatorService.StartTaskChainAsync();
                 await _funnelCreatorService.WaitCompletionGeneralTask();
                 var funnelText = generalTask.HashtagFunnel.FunnelText;
                 return Ok(funnelText);

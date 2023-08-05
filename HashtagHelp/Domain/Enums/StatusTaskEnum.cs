@@ -4,8 +4,10 @@ namespace HashtagHelp.Domain.Enums
     {
         Initiated,
         Configured,
-        InProcess,
-        Completed,
+        Collection,
+        Collected,
+        Filtration,
+        Filtrated,
         Error
     }
 }
