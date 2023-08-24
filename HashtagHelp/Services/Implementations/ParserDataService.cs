@@ -12,15 +12,17 @@ namespace HashtagHelp.Services.Implementations
         public Dictionary<string, int> RedoFiles(string tagsTaskContent)
         {
             var freqDict = new Dictionary<string, int>();
+            char[] separators = new char[] { ' ', ',' };
+
             IEnumerable<IEnumerable<string>> hashtagFreq = tagsTaskContent
                 .Split('\n')
-                .Where(line => line.Split(':').Length == 2)
-                .Where(line => line.Split(':')[1] != 0.ToString())
-                .Select(line => line.Split(':')[1].Split(' '));
+                .Where(line => line.Split(':').Length < 15)
+                .Where(line => line.Split(':')[^1] != 0.ToString())
+                .Select(line => line.Split(':')[^1].Split(separators, StringSplitOptions.RemoveEmptyEntries));
 
             var hashtags = hashtagFreq.SelectMany(line => line)
-                .Select(hashtag => hashtag.TrimStart('#'))
-                .Where(hashtag => hashtag != "");
+                .Where(word => !ContainsEmoji(word))
+                .Select(hashtag => hashtag.TrimStart('#'));
 
             foreach (var hashtag in hashtags)
             {
@@ -32,15 +34,16 @@ namespace HashtagHelp.Services.Implementations
             return freqDict;
         }
 
-        public void RareFreqTagsRemove(Dictionary<string, int> freqDict)
+        public void RareFreqTagsRemove(Dictionary<string, int> freqDict, int minFollowerTagsCount)
         {
             int bottomBorder = freqDict.Count / 1000 + 5;
             if (bottomBorder > 50) bottomBorder = 50;
             var newFreqDict = freqDict.Where(x => x.Value >= bottomBorder).ToDictionary(x => x.Key, x => x.Value);
-            while (newFreqDict.Count < 100)
+            while (newFreqDict.Count < minFollowerTagsCount)
             {
                 bottomBorder -= 1;
                 newFreqDict = freqDict.Where(x => x.Value >= bottomBorder).ToDictionary(x => x.Key, x => x.Value);
+                if (bottomBorder == 1) break;
             }
             freqDict = newFreqDict;
         }
@@ -104,12 +107,23 @@ namespace HashtagHelp.Services.Implementations
                     " Работа завершена!";
             }
             else
-                information = $"Создано " + funnelsCount + " воронок всего с "+fullPacksCount+ " паками по " + hashtagFunnelNumber
-                    + " хэштегов и, возможно, есть паки меньше." + '\n'+
+                information = $"Создано " + funnelsCount + " воронок всего с " + fullPacksCount + " паками по " + hashtagFunnelNumber
+                    + " хэштегов и, возможно, есть паки меньше." + '\n' +
                     "Работа успешно завершена!\n\n";
             hashtagsLines.Insert(0, information);
 
             return hashtagsLines;
+        }
+        static bool ContainsEmoji(string text)
+        {
+            foreach (char c in text)
+            {
+                if (char.IsSurrogate(c))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

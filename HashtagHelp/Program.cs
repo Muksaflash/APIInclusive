@@ -21,14 +21,16 @@ if (connectionString != null)
     });
 builder.Services.AddScoped<IFunnelService, FunnelService>();
 builder.Services.AddScoped<IApiRequestService, InstaParserAPIRequestService>();
-builder.Services.AddScoped<IFollowersGetterService, RocketAPIFollowersGetterService>();
-builder.Services.AddScoped<IFollowingTagsGetterService, InstData2FollowingTagsGetterService>();
-builder.Services.AddScoped<IIdGetterService, RocketAPIIdGetterService>();
 builder.Services.AddScoped<IDataRepository, DataRepository>();
 builder.Services.AddScoped<IParserDataService, ParserDataService>();
 builder.Services.AddScoped<IHashtagApiRequestService, RocketAPIRequestService>();
-builder.Services.AddScoped<IProcessLogger, DesktopFileLogger>();
+builder.Services.AddTransient<IProcessLogger, DesktopFileLogger>();
 builder.Services.AddScoped<IGoogleApiRequestService, GoogleRequestApiService>();
+
+builder.Services.AddHostedService<TaskManagerService>();
+builder.Services.AddHttpClient(); 
+
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -49,17 +51,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run(async context =>
-{
-    // Получаем DI контейнер приложения
-    var serviceProvider = app.Services;
-
-    // Получаем экземпляр IFunnelService из DI контейнера
-    var funnelService = serviceProvider.GetRequiredService<IFunnelService>();
-
-    // Делаем что-то с результатом (например, отправляем в ответ клиенту)
-    // ...
-
-    // Завершаем запрос
-    await context.Response.CompleteAsync();
-});
+app.Run();

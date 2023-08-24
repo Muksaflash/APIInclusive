@@ -9,9 +9,9 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         private readonly int maxAttempts = 5; // Максимальное количество повторных попыток
         private readonly int maxBackoffTime = 64000; // Максимальное время отсрочки (64 секунды)
 
-        public InstaParserAPIRequestService()
+        public InstaParserAPIRequestService(IHttpClientFactory httpFactory)
         {
-            _httpClient = new HttpClient();
+            _httpClient = httpFactory.CreateClient();
         }
 
         private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> action)

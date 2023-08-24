@@ -16,9 +16,9 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
         private readonly int _maxAttempts = 5; // Максимальное количество повторных попыток
         private readonly int _maxBackoffTime = 64000; // Максимальное время отсрочки (64 секунды)
 
-        public RocketAPIRequestService()
+        public RocketAPIRequestService(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = new HttpClient();
+            _httpClient = httpClientFactory.CreateClient();
             _httpClient.DefaultRequestHeaders.Add(_rapidApiHostHeader, _rapidApiHostHeaderValue);
         }
 
@@ -31,7 +31,11 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
 
         public async Task<BodyData> GetHashtagInfoAsync(string apiKey, string hashtag)
         {
-            _httpClient.DefaultRequestHeaders.Add(_rapidApiKeyHeader, apiKey);
+            if (!_httpClient.DefaultRequestHeaders.Contains(_rapidApiKeyHeader))
+            {
+                _httpClient.DefaultRequestHeaders.Add(_rapidApiKeyHeader, apiKey);
+            }
+            
             string jsonRequestData = $"{{ \"name\": \"{hashtag}\" }}";
             string apiUrl = $"{_apiUrl}/instagram/hashtag/get_info";
             var response = await GetRocketApiData(apiUrl, jsonRequestData);

@@ -21,7 +21,7 @@ namespace HashtagHelp.DAL
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<ParserTaskEntity>()
+            modelBuilder.Entity<GeneralTaskEntity>()
                 .Property(p => p.Status)
                 .HasConversion<string>();
 
