@@ -1,5 +1,6 @@
 ﻿using HashtagHelp.DAL;
 using HashtagHelp.Domain.Models;
+using HashtagHelp.Domain.Enums;
 using HashtagHelp.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -11,11 +12,12 @@ namespace HashtagHelp.Services.Implementations
 
         private readonly AppDbContext _context;
 
-        public IGoogleApiRequestService GoogleApiRequestService { get; set; }
+        private readonly IGoogleApiRequestService? _googleApiRequestService;
 
-        public DataRepository(AppDbContext context)
+        public DataRepository(AppDbContext? context, IGoogleApiRequestService? googleApiRequestService)
         {
             _context = context;
+            _googleApiRequestService = googleApiRequestService;
         }
 
         public void AddGeneralTask(GeneralTaskEntity generalTask)
@@ -53,6 +55,11 @@ namespace HashtagHelp.Services.Implementations
             _context.Hashtags.Add(hashtag);
         }
 
+        public void UpdateHashtag(HashtagEntity hashtag)
+        {
+            _context.Hashtags.Update(hashtag);
+        }
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
@@ -67,6 +74,10 @@ namespace HashtagHelp.Services.Implementations
                 return property != null;
             }
             return false;
+        }
+        public bool DoesHashtagExist(string hashtagName)
+        {
+            return _context.Hashtags.Any(h => h.Name == hashtagName);
         }
 
         public async Task<TEntity> GetEntityByFieldValueAsync<TEntity>(string tableName, string fieldName, string fieldValue)
@@ -92,31 +103,42 @@ namespace HashtagHelp.Services.Implementations
             throw new InvalidOperationException("Invalid table or field name.");
         }
 
-        private async Task SetDeletionDate()
-        {
-            await GoogleApiRequestService.SetParameterAsync("G2", DateTime.Now.ToString());
-        }
-        // Ваш метод для вызова удаления старых записей
-        public async Task DeleteOldRecordsAsync(DateTime thresholdDate)
-        {
-            var oldRecords = _context.Hashtags.Where(r => r.CreatedDate < thresholdDate);
-            _context.Hashtags.RemoveRange(oldRecords);
-            await _context.SaveChangesAsync();
-        }
-
-        // Метод для проверки и вызова удаления старых записей
         public async Task CheckAndDeleteOldRecordsAsync()
         {
             DateTime now = DateTime.Now;
             DateTime thresholdDate = now.AddDays(-30);
-            var lastDeletionTime = DateTime.Parse(await GoogleApiRequestService.GetParameterAsync("G2"));
+            var lastDeletionTime = DateTime.Parse(await _googleApiRequestService.GetParameterAsync("G2"));
             var pastAfterDeletionHours = now - lastDeletionTime;
-            if (pastAfterDeletionHours > TimeSpan.FromHours(24)) 
+            if (pastAfterDeletionHours > TimeSpan.FromHours(24))
             {
                 await DeleteOldRecordsAsync(thresholdDate);
-                await SetDeletionDate();
+                await SetDeletionDateAsync();
             }
         }
 
+        public IQueryable<GeneralTaskEntity> GetNotCompletedGeneralTasks()
+        {
+            return _context.GeneralTasks
+                .Include(r => r.CollectionTask)
+                    .ThenInclude(ct => ct.ResearchedUsers)
+                .Include(r => r.FiltrationTask)
+                .Include(r => r.User)
+                .Where(r => r.Status != StatusTaskEnum.Error && r.Status != StatusTaskEnum.Filtrated);
+        }
+
+        private async Task SetDeletionDateAsync()
+        {
+            await _googleApiRequestService.SetParameterAsync("G2", DateTime.Now.ToString());
+        }
+
+        private async Task DeleteOldRecordsAsync(DateTime thresholdDate)
+        {
+            if (_context.Hashtags.Any())
+            {
+                var oldRecords = _context.Hashtags.Where(r => r.CreatedDate < thresholdDate);
+                _context.Hashtags.RemoveRange(oldRecords);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

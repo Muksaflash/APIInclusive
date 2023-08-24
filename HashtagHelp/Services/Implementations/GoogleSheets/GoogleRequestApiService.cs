@@ -13,8 +13,8 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         private readonly int maxBackoffTime = 64000; // Максимальное время отсрочки (64 секунды)
         private readonly SheetsService sheetsService;
         public string configGoogleSpreadsheetID = "1BXVyKV6ScRArAx3qdYxqOiHPJsO5ByfBrSs58I8vojA";
-        public string configGoogleSheet = "config1"; 
-        public string HashtagArea {get; set;}
+        public string configGoogleSheet = "config1";
+        public string HashtagArea { get; set; }
 
         public GoogleRequestApiService()
         {
@@ -77,11 +77,8 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 {
                     foreach (var row in values)
                     {
-                        if (row.Count >= 2)
-                        {
-                            var hashtag = row[0].ToString();
-                            hashtags.Add(hashtag);
-                        }
+                        var hashtag = row[0].ToString();
+                        hashtags.Add(hashtag);
                     }
                 }
                 return hashtags;

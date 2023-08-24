@@ -4,9 +4,9 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <DocumentationFile>HashtagHelp.xml</DocumentationFile>
-  </PropertyGroup>
+    <!-- <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
+    <!-- <DocumentationFile>HashtagHelp.xml</DocumentationFile> -->  
+    </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Google.Apis.Sheets.v4" Version="1.61.0.3092" />
