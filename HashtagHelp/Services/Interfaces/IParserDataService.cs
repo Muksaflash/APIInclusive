@@ -5,7 +5,7 @@ namespace HashtagHelp.Services.Interfaces
     public interface IParserDataService
     {
         Dictionary<string, int> RedoFiles(string tagsTaskContent);
-        void RareFreqTagsRemove(Dictionary<string, int> freqDict, int minFollowerTagsCount);
+        Dictionary<string, int> RareFreqTagsRemove(Dictionary<string, int> freqDict, int minFollowerTagsCount);
         List<string> CreateFunnels(FunnelEntity model, List<HashtagEntity> listHashtags);
     }
 }

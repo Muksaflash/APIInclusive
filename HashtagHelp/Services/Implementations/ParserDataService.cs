@@ -34,7 +34,7 @@ namespace HashtagHelp.Services.Implementations
             return freqDict;
         }
 
-        public void RareFreqTagsRemove(Dictionary<string, int> freqDict, int minFollowerTagsCount)
+        public Dictionary<string, int> RareFreqTagsRemove(Dictionary<string, int> freqDict, int minFollowerTagsCount)
         {
             int bottomBorder = freqDict.Count / 1000 + 5;
             if (bottomBorder > 50) bottomBorder = 50;
@@ -45,7 +45,7 @@ namespace HashtagHelp.Services.Implementations
                 newFreqDict = freqDict.Where(x => x.Value >= bottomBorder).ToDictionary(x => x.Key, x => x.Value);
                 if (bottomBorder == 1) break;
             }
-            freqDict = newFreqDict;
+            return newFreqDict;
         }
 
         public List<string> CreateFunnels(FunnelEntity model, List<HashtagEntity> listHashtags)

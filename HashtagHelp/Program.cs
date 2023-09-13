@@ -19,7 +19,7 @@ if (connectionString != null)
         options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
         builder => builder.CommandTimeout(30));
     });
-builder.Services.AddScoped<IFunnelService, FunnelService>();
+builder.Services.AddScoped<IFunnelService, FunnelServiceAnnetaTask>();
 builder.Services.AddScoped<IApiRequestService, InstaParserAPIRequestService>();
 builder.Services.AddScoped<IDataRepository, DataRepository>();
 builder.Services.AddScoped<IParserDataService, ParserDataService>();
