@@ -5,7 +5,7 @@ using HashtagHelp.Services.Interfaces;
 
 namespace HashtagHelp.Services.Implementations
 {
-    public class FunnelService : IFunnelService
+    public class FunnelServiceAnnetaTask : IFunnelService
     {
         private readonly IApiRequestService _instaParserApiRequestService;
         private readonly IHashtagApiRequestService _hashtagApiRequestService;
@@ -24,12 +24,12 @@ namespace HashtagHelp.Services.Implementations
         private long minTagMediaCount;
         private long maxTagMediaCount;
         private long minMediaCountInterval;
-        private int minFollowerTagsCount = 100;
+        private int minFollowerTagsCount = 500;
         private long hashtagsNumber;
         private TaskCompletionSource<bool> _funnelCompletionSource = new();
         private readonly SemaphoreSlim semaphore = new(1);
 
-        public FunnelService(IApiRequestService apiRequestService, IHashtagApiRequestService hashtagApiRequestService,
+        public FunnelServiceAnnetaTask(IApiRequestService apiRequestService, IHashtagApiRequestService hashtagApiRequestService,
         IProcessLogger processLogger, IParserDataService parserDataService, IDataRepository dataRepository,
         IGoogleApiRequestService googleApiRequestService)
         {
@@ -85,18 +85,7 @@ namespace HashtagHelp.Services.Implementations
 
         public async Task StartTaskChainAsync()
         {
-            if (_generalTask.Status == StatusTaskEnum.Configured || _generalTask.Status == StatusTaskEnum.Collection)
-            {
-                await AddCollectionTaskAsync();
-            }
-            if (_generalTask.Status == StatusTaskEnum.Collected || _generalTask.Status == StatusTaskEnum.Filtration)
-            {
-                await AddFiltrationTaskAsync();
-            }
-            if (_generalTask.Status == StatusTaskEnum.Filtrated)
-            {
-                await FunnelCreateAsync();
-            }
+            await FunnelCreateAsync();
         }
 
         private async Task AddCollectionTaskAsync()
@@ -185,8 +174,11 @@ namespace HashtagHelp.Services.Implementations
         {
             try
             {
-                var tagsTaskContent = await _instaParserApiRequestService
+                /* var tagsTaskContent = await _instaParserApiRequestService
                     .GetTagsTaskContentAPIAsync(instaParserKey, _generalTask.FiltrationTask.InParserId, instaParserUrl);
+                   */
+                var directoryParserFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Subscribers_Tags_filtration_of-__vuhlandes_justinbaessler_baryshovv_roslichenkos_basechkaa_mistifika.txt");
+                var tagsTaskContent = await File.ReadAllTextAsync(directoryParserFile);
                 var tagFreq = _parserDataService.RedoFiles(tagsTaskContent);
                 ValidateTagFreq(tagFreq);
                 tagFreq = _parserDataService.RareFreqTagsRemove(tagFreq, minFollowerTagsCount);
@@ -194,21 +186,23 @@ namespace HashtagHelp.Services.Implementations
                 var hashtags = await ProcessHashtagsAsync(tagFreq);
                 //await SaveHashtagsAsync(hashtags);
                 var areaHashtags = await _googleApiRequestService.GetAreaHashtags();
-                areaHashtags = areaHashtags.Select(word => word.TrimStart('#')).ToList();
-                var areaHashtagsEntities = await ProcessHashtagsAsync(areaHashtags.GroupBy(x => x)
-                    .ToDictionary(group => group.Key, group => 50));
+                areaHashtags = areaHashtags
+                    .Select(word => word.TrimStart('#'))
+                    .Where(word => !ContainsWrongSymbols(word))
+                    .ToList();
+                var areaHashtagsEntities = await ProcessHashtagsAsync(areaHashtags.ToDictionary(x => x, x => 50));
+                //!!! если хэштеги поввторяются, то возникает ошибка!
                 hashtags.AddRange(areaHashtagsEntities);
                 //await SaveHashtagsAsync(areaHashtagsEntities);
                 var funnel = new FunnelEntity(minTagMediaCount, maxTagMediaCount, minMediaCountInterval, hashtagsNumber);
                 var funelLines = _parserDataService.CreateFunnels(funnel, hashtags);
                 funnel.FunnelText = string.Join("", funelLines);
-
-                var directoryOutFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "funnefreqOut.txt");
-                foreach (var hashtag in hashtags)
+                var directoryOutFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "funneOutAnn.txt");
+                /* foreach (var hashtag in hashtags)
                 {
                     File.AppendAllText(directoryOutFile, hashtag.Name + '\t' + hashtag.MediaCount + Environment.NewLine);
-                }
-                //это для работы дома
+                } */
+                await File.WriteAllTextAsync(directoryOutFile, funnel.FunnelText);
                 _generalTask.HashtagFunnel = funnel;
                 _funnelCompletionSource.SetResult(true);
             }
@@ -219,6 +213,17 @@ namespace HashtagHelp.Services.Implementations
                 _funnelCompletionSource.SetException(ex);
             }
         }
+        static bool ContainsWrongSymbols(string text)
+        {
+            foreach (char c in text)
+            {
+                if (char.IsSurrogate(c) || char.IsPunctuation(c))
+                {
+                    return true;//добавить все плохие символы!
+                }
+            }
+            return false;
+        }//придумать куда пихнуть этот функционал!!! он уже есть в ParserDataService
         public async Task WaitCompletionGeneralTaskAsync()
         {
             await _funnelCompletionSource.Task;

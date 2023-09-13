@@ -8,7 +8,7 @@
 
         public string InstagramId { get; set; } = string.Empty;
 
-        public string MediaCount { get; set; } = string.Empty;
+        public string MediaCount { get; set; } = "0";
 
         public DateTime CreatedDate { get; set; } = DateTime.Now;
     }

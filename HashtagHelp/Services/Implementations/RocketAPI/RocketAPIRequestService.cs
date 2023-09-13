@@ -14,6 +14,7 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
         private readonly string _rapidApiHostHeader = "X-RapidAPI-Host";
         private readonly string _rapidApiHostHeaderValue = "rocketapi-for-instagram.p.rapidapi.com";
         private readonly int _maxAttempts = 5; // Максимальное количество повторных попыток
+        private readonly int _maxExceptionsInARaw = 2; // Максимальное количество повторных ошибок
         private readonly int _maxBackoffTime = 64000; // Максимальное время отсрочки (64 секунды)
 
         public RocketAPIRequestService(IHttpClientFactory httpClientFactory)
@@ -31,16 +32,44 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
 
         public async Task<BodyData> GetHashtagInfoAsync(string apiKey, string hashtag)
         {
-            if (!_httpClient.DefaultRequestHeaders.Contains(_rapidApiKeyHeader))
+            BodyData hashtagInfo = await GetValuesWithRetryAsync(_maxAttempts, async () =>
             {
-                _httpClient.DefaultRequestHeaders.Add(_rapidApiKeyHeader, apiKey);
-            }
-            
-            string jsonRequestData = $"{{ \"name\": \"{hashtag}\" }}";
-            string apiUrl = $"{_apiUrl}/instagram/hashtag/get_info";
-            var response = await GetRocketApiData(apiUrl, jsonRequestData);
-            ServerResponse serverResponse = JsonConvert.DeserializeObject<ServerResponse>(response);
-            var hashtagInfo = serverResponse.response.Body.data;
+                var exceptionCount = 0;
+                if (!_httpClient.DefaultRequestHeaders.Contains(_rapidApiKeyHeader))
+                {
+                    _httpClient.DefaultRequestHeaders.Add(_rapidApiKeyHeader, apiKey);
+                }
+                string jsonRequestData = $"{{ \"name\": \"{hashtag}\" }}";
+                string apiUrl = $"{_apiUrl}/instagram/hashtag/get_info";
+                var response = await GetRocketApiData(apiUrl, jsonRequestData);
+                ServerResponse serverResponse;
+                BodyData hashtagInfo;
+                try
+                {
+                    serverResponse = JsonConvert.DeserializeObject<ServerResponse>(response);
+                    hashtagInfo = serverResponse.response.Body.data;
+                    exceptionCount = 0;
+                }
+                catch (Exception ex)
+                {
+                    if (ex is JsonSerializationException)
+                    {
+                        hashtagInfo = new() { media_count = "0" };
+                    }
+                    /* else if(exceptionCount < _maxExceptionsInARaw)
+                    {
+                        hashtagInfo = new() { media_count = "0" };
+                        exceptionCount++;
+                    } как вариант можно использовать */ 
+                    else throw;
+                    
+                }
+                if (hashtagInfo.media_count == null)
+                {
+                    hashtagInfo.media_count = "0";
+                }
+                return hashtagInfo;
+            });
             return hashtagInfo;
         }
 
@@ -111,7 +140,7 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
                 catch (Exception ex) when (!IsRetryableError(ex))
                 {
                     // Обработка неповторяемых ошибок
-                    Console.WriteLine($"Неповторяемая ошибка (попытка {attempt}): {ex.Message}");
+                    Console.WriteLine($"Неповторяемая ошибка (попытка " + attempt + "): " + ex.Message);
                     throw;
                 }
             }
@@ -124,7 +153,8 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
         {
             // Проверяем, является ли ошибка повторяемой
             // Возможно, здесь нужно добавить дополнительные условия для определения повторяемой ошибки
-            return ex is HttpRequestException;
+            return ex is HttpRequestException || ex is NullReferenceException || ex is TaskCanceledException;
+
         }
 
         private async Task HandleRetryableError(Exception ex, int attempt, int maxBackoffTime)
@@ -133,8 +163,8 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
             int randomMilliseconds = new Random().Next(1000);
             int backoffTime = Math.Min((int)Math.Pow(2, attempt) * 1000 + randomMilliseconds, maxBackoffTime);
 
-            Console.WriteLine($"Ошибка (попытка {attempt}): {ex.Message}");
-            Console.WriteLine($"Повторная попытка через {backoffTime} мс.");
+            Console.WriteLine("Ошибка (попытка " + attempt + "): " + ex.Message);
+            Console.WriteLine("Повторная попытка через " + backoffTime + " мс.");
             await Task.Delay(backoffTime);
         }
     }
