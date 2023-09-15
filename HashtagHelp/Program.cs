@@ -1,8 +1,6 @@
 using HashtagHelp.DAL;
 using HashtagHelp.Services.Implementations;
 using HashtagHelp.Services.Implementations.Loggers;
-using HashtagHelp.Services.Implementations.InstagramData;
-using HashtagHelp.Services.Implementations.InstData2;
 using HashtagHelp.Services.Implementations.RocketAPI;
 using HashtagHelp.Services.Implementations.InstaParser;
 using HashtagHelp.Services.Interfaces;
@@ -19,7 +17,7 @@ if (connectionString != null)
         options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString),
         builder => builder.CommandTimeout(30));
     });
-builder.Services.AddScoped<IFunnelService, FunnelServiceAnnetaTask>();
+builder.Services.AddScoped<IFunnelService, FunnelService>();
 builder.Services.AddScoped<IApiRequestService, InstaParserAPIRequestService>();
 builder.Services.AddScoped<IDataRepository, DataRepository>();
 builder.Services.AddScoped<IParserDataService, ParserDataService>();
