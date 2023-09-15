@@ -8,37 +8,41 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 {
     public class GoogleRequestApiService : IGoogleApiRequestService
     {
-        private readonly string spreadsheetId = "1GB4pkp8M2H2twaliGdhD5pEDlsmEPC9gBT_FUmPq270";
-        private readonly int maxAttempts = 5; // Максимальное количество повторных попыток
-        private readonly int maxBackoffTime = 64000; // Максимальное время отсрочки (64 секунды)
-        private readonly SheetsService sheetsService;
-        public string configGoogleSpreadsheetID = "1BXVyKV6ScRArAx3qdYxqOiHPJsO5ByfBrSs58I8vojA";
-        public string configGoogleSheet = "config1";
         public string HashtagArea { get; set; }
+        private readonly string _configGoogleSpreadsheetID = "1BXVyKV6ScRArAx3qdYxqOiHPJsO5ByfBrSs58I8vojA";
+        private readonly string _configGoogleSheet = "config1";
+        private readonly string _spreadsheetId = "1GB4pkp8M2H2twaliGdhD5pEDlsmEPC9gBT_FUmPq270";
+        private readonly int _maxAttempts = 5;
+        private readonly int _maxBackoffTime = 64000;
+        private readonly SheetsService _sheetsService;
+        private readonly string _credentialFileName = "hashtaghelp-13d38e1b1284.json";
+        private readonly string _applicationName = "HashtagHelp";
+        private readonly string _configRange = "!A2:Z";
+        private readonly string _areaHashtagsRange = "!A1:B";
+        private readonly string _areasListRange = "!A2:A";
 
         public GoogleRequestApiService()
         {
             GoogleCredential credential;
-            using (var stream = new FileStream("hashtaghelp-13d38e1b1284.json", FileMode.Open, FileAccess.Read))
+            using (var stream = new FileStream(_credentialFileName, FileMode.Open, FileAccess.Read))
             {
                 credential = GoogleCredential.FromStream(stream)
                     .CreateScoped(SheetsService.Scope.Spreadsheets);
             }
-
-            sheetsService = new(new BaseClientService.Initializer()
+            _sheetsService = new(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
-                ApplicationName = "HashtagHelp"
+                ApplicationName = _applicationName
             });
         }
 
         public async Task<List<string>> GetAllConfigSheetData()
         {
-            string range = $"{configGoogleSheet}!A2:Z";
-            return await ExecuteWithRetryAsync(maxAttempts, async () =>
+            string range = _configGoogleSheet + _configRange;
+            return await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
                 SpreadsheetsResource.ValuesResource.GetRequest request =
-                    sheetsService.Spreadsheets.Values.Get(configGoogleSpreadsheetID, range);
+                    _sheetsService.Spreadsheets.Values.Get(_configGoogleSpreadsheetID, range);
 
                 ValueRange response = await request.ExecuteAsync();
                 IList<IList<object>> values = response.Values;
@@ -61,11 +65,11 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         public async Task<List<string>> GetAreaHashtags()
         {
             string sheetName = HashtagArea;
-            string range = $"{sheetName}!A1:B";
-            return await ExecuteWithRetryAsync(maxAttempts, async () =>
+            string range = sheetName + _areaHashtagsRange;
+            return await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
                 SpreadsheetsResource.ValuesResource.GetRequest request =
-                    sheetsService.Spreadsheets.Values.Get(spreadsheetId, range);
+                    _sheetsService.Spreadsheets.Values.Get(_spreadsheetId, range);
 
                 request.MajorDimension = SpreadsheetsResource.ValuesResource.GetRequest.MajorDimensionEnum.ROWS;
 
@@ -87,11 +91,11 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task<List<string>> GetAreasListAsync()
         {
-            string range = $"{configGoogleSheet}!A2:A";
-            return await ExecuteWithRetryAsync(maxAttempts, async () =>
+            string range = _configGoogleSheet + _areasListRange;
+            return await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
                 SpreadsheetsResource.ValuesResource.GetRequest request =
-                    sheetsService.Spreadsheets.Values.Get(configGoogleSpreadsheetID, range);
+                    _sheetsService.Spreadsheets.Values.Get(_configGoogleSpreadsheetID, range);
 
                 ValueRange response = await request.ExecuteAsync();
                 IList<IList<object>> values = response.Values;
@@ -113,11 +117,11 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task<string> GetParameterAsync(string cellAddress)
         {
-            string range = $"{configGoogleSheet}!{cellAddress}";
-            return await ExecuteWithRetryAsync(maxAttempts, async () =>
+            string range = _configGoogleSheet + "!" + cellAddress;
+            return await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
                 SpreadsheetsResource.ValuesResource.GetRequest request =
-                    sheetsService.Spreadsheets.Values.Get(configGoogleSpreadsheetID, range);
+                    _sheetsService.Spreadsheets.Values.Get(_configGoogleSpreadsheetID, range);
 
                 ValueRange response = await request.ExecuteAsync();
                 IList<IList<object>> values = response.Values;
@@ -125,8 +129,8 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 if (values != null && values.Count > 0)
                 {
                     var cellValue = values[0][0].ToString();
-                    Console.WriteLine($"Значение ячейки {cellAddress}: {cellValue}");
-                    return cellValue;
+                    Console.WriteLine("Cell value " + cellAddress + ": " + cellValue);
+                    return cellValue ?? throw new Exception("cellValue is null");
                 }
 
                 throw new Exception("empty cell parameter Google Sheet");
@@ -135,18 +139,18 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task SetParameterAsync(string cellAddress, string newValue)
         {
-            string range = $"{configGoogleSheet}!{cellAddress}";
-            await ExecuteWithRetryAsync(maxAttempts, async () =>
+            string range = $"{_configGoogleSheet}!{cellAddress}";
+            await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
                 ValueRange updateRequest = new()
                 {
                     Values = new List<IList<object>> { new List<object> { newValue } },
                 };
                 SpreadsheetsResource.ValuesResource.UpdateRequest updateCellRequest =
-                    sheetsService.Spreadsheets.Values.Update(updateRequest, configGoogleSpreadsheetID, range);
+                    _sheetsService.Spreadsheets.Values.Update(updateRequest, _configGoogleSpreadsheetID, range);
                 updateCellRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
                 await updateCellRequest.ExecuteAsync();
-                return $"Значение ячейки {cellAddress} обновлено: {newValue}";
+                return "Cell value " + cellAddress + " updated: " + newValue;
             });
         }
 
@@ -161,18 +165,18 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 catch (Exception ex) when (IsRetryableError(ex) && attempt < maxAttempts)
                 {
                     // Обработка ошибки Google Sheets API с повторной попыткой
-                    await HandleRetryableError(ex, attempt, maxBackoffTime);
+                    await HandleRetryableError(ex, attempt, _maxBackoffTime);
                 }
                 catch (Exception ex) when (!IsRetryableError(ex))
                 {
                     // Обработка неповторяемых ошибок
-                    Console.WriteLine($"Неповторяемая ошибка (попытка {attempt}): {ex.Message}");
+                    Console.WriteLine("Non-repeating error (attempt " + attempt + "): " + ex.Message);
                     throw;
                 }
             }
 
             // Если достигли этой точки, значит не удалось получить данные после максимального числа повторных попыток
-            throw new Exception("Не удалось получить данные из Google Sheet после максимального числа повторных попыток.");
+            throw new Exception("Failed to retrieve data from Google Sheet after the maximum number of retry attempts.");
         }
 
         private bool IsRetryableError(Exception ex)

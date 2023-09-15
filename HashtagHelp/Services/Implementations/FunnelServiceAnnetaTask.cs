@@ -2,6 +2,7 @@
 using HashtagHelp.Domain.Models;
 using HashtagHelp.Domain.Enums;
 using HashtagHelp.Services.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace HashtagHelp.Services.Implementations
 {
@@ -187,10 +188,12 @@ namespace HashtagHelp.Services.Implementations
                 //await SaveHashtagsAsync(hashtags);
                 var areaHashtags = await _googleApiRequestService.GetAreaHashtags();
                 areaHashtags = areaHashtags
-                    .Select(word => word.TrimStart('#'))
+                    .Select(word => word.TrimStart('#').Trim())
                     .Where(word => !ContainsWrongSymbols(word))
                     .ToList();
-                var areaHashtagsEntities = await ProcessHashtagsAsync(areaHashtags.ToDictionary(x => x, x => 50));
+                var areaHashtagsEntities = await ProcessHashtagsAsync(areaHashtags
+                    .GroupBy(x => x)
+                    .ToDictionary(group => group.Key, group => 50));
                 //!!! если хэштеги поввторяются, то возникает ошибка!
                 hashtags.AddRange(areaHashtagsEntities);
                 //await SaveHashtagsAsync(areaHashtagsEntities);
@@ -215,14 +218,8 @@ namespace HashtagHelp.Services.Implementations
         }
         static bool ContainsWrongSymbols(string text)
         {
-            foreach (char c in text)
-            {
-                if (char.IsSurrogate(c) || char.IsPunctuation(c))
-                {
-                    return true;//добавить все плохие символы!
-                }
-            }
-            return false;
+            var value = !Regex.IsMatch(text, @"^[\p{L}0-9_]+$");
+            return value;
         }//придумать куда пихнуть этот функционал!!! он уже есть в ParserDataService
         public async Task WaitCompletionGeneralTaskAsync()
         {
