@@ -1,59 +1,42 @@
-﻿using HashtagHelp.Domain.ExternalApiModels.RocketAPI;
+using HashtagHelp.Domain.ExternalApiModels.BulkLatest;
 using HashtagHelp.Services.Interfaces;
 using Newtonsoft.Json;
-using System.Text;
 
 namespace HashtagHelp.Services.Implementations.RocketAPI
 {
-    public class RocketAPIRequestService : IHashtagApiRequestService
+    public class BulkLatestApiRequestService: IHashtagApiRequestService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiUrl = "https://rocketapi-for-instagram.p.rapidapi.com";
+        private readonly string _apiUrl = "https://instagram-bulk-scraper-latest.p.rapidapi.com";
         private readonly string _rapidApiKeyHeader = "X-RapidAPI-Key";
         private readonly string _rapidApiHostHeader = "X-RapidAPI-Host";
-        private readonly string _rapidApiHostHeaderValue = "rocketapi-for-instagram.p.rapidapi.com";
+        private readonly string _rapidApiHostHeaderValue = "instagram-bulk-scraper-latest.p.rapidapi.com";
         private readonly int _maxAttempts = 5;
         private readonly int _maxBackoffTime = 64000;
-        private readonly string _getIdEndpoint = "/instagram/user/get_info";
-        private readonly string _hashtagInfoEndpoint = "/instagram/hashtag/get_info";
+        private readonly string _hashtagInfoEndpoint = "search_hashtag/";
 
-        public RocketAPIRequestService(IHttpClientFactory httpClientFactory)
+        public BulkLatestApiRequestService(IHttpClientFactory httpClientFactory)
         {
             _httpClient = httpClientFactory.CreateClient();
             _httpClient.DefaultRequestHeaders.Add(_rapidApiHostHeader, _rapidApiHostHeaderValue);
-        }
-
-        public async Task<string> GetIdAPIAsync(string nickName)
-        {
-            var id = await GetValuesWithRetryAsync(_maxAttempts, async () =>
-            {
-                string json = "{{ \"username\": \"" + nickName + "\" }}";
-                string apiUrl = _apiUrl + _getIdEndpoint;
-                var id = await GetRocketApiDataAsync(apiUrl, json);
-                return id;
-            });
-            return id;
         }
 
         public async Task<BodyData> GetHashtagInfoAsync(string apiKey, string hashtag)
         {
             BodyData hashtagInfo = await GetValuesWithRetryAsync(_maxAttempts, async () =>
             {
-                var exceptionCount = 0;
                 if (!_httpClient.DefaultRequestHeaders.Contains(_rapidApiKeyHeader))
                 {
                     _httpClient.DefaultRequestHeaders.Add(_rapidApiKeyHeader, apiKey);
                 }
-                string jsonRequestData = "{{ \"name\": \"" + hashtag + "\" }}";
-                string apiUrl = _apiUrl + _hashtagInfoEndpoint;
-                var response = await GetRocketApiDataAsync(apiUrl, jsonRequestData);
+                string apiUrl = _apiUrl + _hashtagInfoEndpoint + hashtag;
+                var response = await GetApiDataAsync(apiUrl);
                 ServerResponse serverResponse;
                 BodyData hashtagInfo;
                 try
                 {
                     serverResponse = JsonConvert.DeserializeObject<ServerResponse>(response);
                     hashtagInfo = serverResponse.response.Body.data;
-                    exceptionCount = 0;
                 }
                 catch (Exception ex)
                 {
@@ -69,13 +52,12 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
             return hashtagInfo;
         }
 
-        private async Task<string> GetRocketApiDataAsync(string apiUrl, string json)
+        private async Task<string> GetApiDataAsync(string apiUrl)
         {
             var request = new HttpRequestMessage
             {
-                Method = HttpMethod.Post,
-                RequestUri = new Uri(apiUrl),
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
+                Method = HttpMethod.Get,
+                RequestUri = new Uri(apiUrl)
             };
             using var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();

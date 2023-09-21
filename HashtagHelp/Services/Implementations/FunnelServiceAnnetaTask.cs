@@ -98,7 +98,7 @@ namespace HashtagHelp.Services.Implementations
                     var userNames = _generalTask.CollectionTask.ResearchedUsers
                         .Select(researchedUser => researchedUser.NickName).ToList();
                     _generalTask.CollectionTask.InParserId = await _instaParserApiRequestService
-                        .AddFollowersTaskAPIAsync(instaParserKey, userNames, instaParserUrl);
+                        .AddCollectionTaskApiAsync(instaParserKey, userNames, instaParserUrl);
                     _processLogger.Log("Начата задача сбора с id: " + _generalTask.CollectionTask.InParserId);
                     _generalTask.Status = StatusTaskEnum.Collection;
                     _dataRepository.UpdateParserTask(_generalTask.CollectionTask);
@@ -125,7 +125,7 @@ namespace HashtagHelp.Services.Implementations
                         .Select(researchedUser => researchedUser.NickName).ToList();
                     var taskId = _generalTask.CollectionTask.InParserId;
                     _generalTask.FiltrationTask.InParserId = await _instaParserApiRequestService
-                        .AddFollowingTagsTaskAPIAsync(instaParserKey, taskId, userNames, instaParserUrl);
+                        .AddFiltrationTaskApiAsync(instaParserKey, taskId, userNames, instaParserUrl);
                     _processLogger.Log("Начата задача фильтрации с id: " + _generalTask.FiltrationTask.InParserId);
                     _generalTask.Status = StatusTaskEnum.Filtration;
                     _dataRepository.UpdateParserTask(_generalTask.FiltrationTask);

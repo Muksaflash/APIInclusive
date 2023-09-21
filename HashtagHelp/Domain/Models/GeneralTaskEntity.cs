@@ -23,5 +23,7 @@ namespace HashtagHelp.Domain.Models
         public string MainParserApiKey { get; set; } = string.Empty;
         
         public string ParserUrl { get; set; } = string.Empty;
+
+        public string ErrorInfo { get; set; } = string.Empty; // новое
     }
 }

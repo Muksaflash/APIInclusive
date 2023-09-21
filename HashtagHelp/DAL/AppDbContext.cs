@@ -14,7 +14,7 @@ namespace HashtagHelp.DAL
         public DbSet<FollowerEntity> Followers { get; set; } = null!;
         public DbSet<HashtagEntity> Hashtags { get; set; } = null!;
         public DbSet<ResearchedUserEntity> ResearchedUsers { get; set; } = null!;
-        public DbSet<FunnelEntity> Funnels { get; set; } = null!;
+        //public DbSet<FunnelEntity> Funnels { get; set; } = null!;
         public DbSet<ParserTaskEntity> Tasks { get; set; } = null!;
         public DbSet<GeneralTaskEntity> GeneralTasks { get; set; } = null!;
         public DbSet<UserEntity> Users { get; set; } = null!;
@@ -24,7 +24,9 @@ namespace HashtagHelp.DAL
             modelBuilder.Entity<GeneralTaskEntity>()
                 .Property(p => p.Status)
                 .HasConversion<string>();
-
+            modelBuilder.Entity<GeneralTaskEntity>()
+                .Property(p => p.ErrorInfo) // Новое свойство
+                .HasColumnType("LONGTEXT"); // Пример конфигурации типа столбца
             base.OnModelCreating(modelBuilder);
         }
     }
