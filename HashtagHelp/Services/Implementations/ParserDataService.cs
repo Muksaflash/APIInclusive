@@ -81,7 +81,7 @@ namespace HashtagHelp.Services.Implementations
                 {
                     if (item.Key >= nextBound && item.Value.Count != 0)
                     {
-                        var hashtagString = $"#{item.Value[0]}\t{item.Key}\n";
+                        var hashtagString = $"#{item.Value[0]}\n";
                         hashtagsLines.Add(hashtagString);
                         item.Value.RemoveAt(0);
                         nextBound = item.Key + freqStep;
@@ -102,14 +102,15 @@ namespace HashtagHelp.Services.Implementations
             var information = string.Empty;
             if (count == 0)
             {
-                information = "В указанной папке отсутствовали записи нужной частотности " +
-                    "либо неправильный формат!" +
-                    " Работа завершена!";
+                information = "There were no records of the required frequency in the specified folder " +
+                "or an incorrect format!" +
+                " The operation is completed!";
             }
             else
-                information = $"Создано " + funnelsCount + " воронок всего с " + fullPacksCount + " паками по " + hashtagFunnelNumber
-                    + " хэштегов и, возможно, есть паки меньше." + '\n' +
-                    "Работа успешно завершена!\n\n";
+                information = $"Created " + funnelsCount + " funnels in total with " + fullPacksCount + " packs of " + hashtagFunnelNumber
+                    + " hashtags, and there may be packs with fewer hashtags." + '\n' +
+                    "The operation has been successfully completed!\n\n";
+
             hashtagsLines.Insert(0, information);
 
             return hashtagsLines;

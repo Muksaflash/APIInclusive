@@ -38,9 +38,9 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task<List<string>> GetAllConfigSheetData()
         {
-            string range = _configGoogleSheet + _configRange;
             return await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
+                string range = _configGoogleSheet + _configRange;
                 SpreadsheetsResource.ValuesResource.GetRequest request =
                     _sheetsService.Spreadsheets.Values.Get(_configGoogleSpreadsheetID, range);
 
@@ -54,7 +54,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                     {
                         foreach (var cell in row)
                         {
-                            Data.Add(cell.ToString());
+                            Data.Add(cell.ToString().Trim());
                         }
                     }
                 }
@@ -64,10 +64,10 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task<List<string>> GetAreaHashtags()
         {
-            string sheetName = HashtagArea;
-            string range = sheetName + _areaHashtagsRange;
             return await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
+                string sheetName = HashtagArea;
+                string range = sheetName + _areaHashtagsRange;
                 SpreadsheetsResource.ValuesResource.GetRequest request =
                     _sheetsService.Spreadsheets.Values.Get(_spreadsheetId, range);
 
@@ -81,7 +81,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 {
                     foreach (var row in values)
                     {
-                        var hashtag = row[0].ToString();
+                        var hashtag = row[0].ToString().Trim();
                         hashtags.Add(hashtag);
                     }
                 }
@@ -91,23 +91,21 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task<List<string>> GetAreasListAsync()
         {
-            string range = _configGoogleSheet + _areasListRange;
             return await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
+                string range = _configGoogleSheet + _areasListRange;
                 SpreadsheetsResource.ValuesResource.GetRequest request =
                     _sheetsService.Spreadsheets.Values.Get(_configGoogleSpreadsheetID, range);
-
                 ValueRange response = await request.ExecuteAsync();
                 IList<IList<object>> values = response.Values;
                 List<string> areas = new();
-
                 if (values != null && values.Count > 0)
                 {
                     foreach (var row in values)
                     {
                         foreach (var cell in row)
                         {
-                            areas.Add(cell.ToString());
+                            areas.Add(cell.ToString().Trim());
                         }
                     }
                 }
@@ -117,31 +115,28 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         public async Task<string> GetParameterAsync(string cellAddress)
         {
-            string range = _configGoogleSheet + "!" + cellAddress;
             return await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
+                string range = _configGoogleSheet + "!" + cellAddress;
                 SpreadsheetsResource.ValuesResource.GetRequest request =
                     _sheetsService.Spreadsheets.Values.Get(_configGoogleSpreadsheetID, range);
-
                 ValueRange response = await request.ExecuteAsync();
                 IList<IList<object>> values = response.Values;
-
                 if (values != null && values.Count > 0)
                 {
-                    var cellValue = values[0][0].ToString();
+                    var cellValue = values[0][0].ToString().Trim();
                     Console.WriteLine("Cell value " + cellAddress + ": " + cellValue);
                     return cellValue ?? throw new Exception("cellValue is null");
                 }
-
                 throw new Exception("empty cell parameter Google Sheet");
             });
         }
 
         public async Task SetParameterAsync(string cellAddress, string newValue)
         {
-            string range = $"{_configGoogleSheet}!{cellAddress}";
             await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
+                string range = $"{_configGoogleSheet}!{cellAddress}";
                 ValueRange updateRequest = new()
                 {
                     Values = new List<IList<object>> { new List<object> { newValue } },
@@ -156,6 +151,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         private async Task<T> ExecuteWithRetryAsync<T>(int maxAttempts, Func<Task<T>> action)
         {
+            Exception error = null;
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 try
@@ -164,36 +160,29 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 }
                 catch (Exception ex) when (IsRetryableError(ex) && attempt < maxAttempts)
                 {
-                    // Обработка ошибки Google Sheets API с повторной попыткой
+                    error = ex;
                     await HandleRetryableError(ex, attempt, _maxBackoffTime);
                 }
                 catch (Exception ex) when (!IsRetryableError(ex))
                 {
-                    // Обработка неповторяемых ошибок
                     Console.WriteLine("Non-repeating error (attempt " + attempt + "): " + ex.Message);
                     throw;
                 }
             }
-
-            // Если достигли этой точки, значит не удалось получить данные после максимального числа повторных попыток
-            throw new Exception("Failed to retrieve data from Google Sheet after the maximum number of retry attempts.");
+            throw new Exception("Failed to retrieve data from Google Sheet after the maximum number of retry attempts." + error.ToString());
         }
 
         private bool IsRetryableError(Exception ex)
         {
-            // Проверяем, является ли ошибка повторяемой
-            // Возможно, здесь нужно добавить дополнительные условия для определения повторяемой ошибки
             return ex is Google.GoogleApiException || ex is HttpRequestException;
         }
 
         private async Task HandleRetryableError(Exception ex, int attempt, int maxBackoffTime)
         {
-            // Обработка повторяемой ошибки с задержкой перед повторной попыткой
             int randomMilliseconds = new Random().Next(1000);
             int backoffTime = Math.Min((int)Math.Pow(2, attempt) * 1000 + randomMilliseconds, maxBackoffTime);
-
-            Console.WriteLine($"Ошибка (попытка {attempt}): {ex.Message}");
-            Console.WriteLine($"Повторная попытка через {backoffTime} мс.");
+            Console.WriteLine("Error (attempt " + attempt + "): " + ex.Message);
+            Console.WriteLine("Retry in " + backoffTime + " ms.");
             await Task.Delay(backoffTime);
         }
     }

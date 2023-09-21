@@ -26,6 +26,8 @@ namespace HashtagHelp.Controllers
 
         private readonly IGoogleApiRequestService _googleApiRequestService;
 
+        private GeneralTaskEntity? _generalTask;
+
         public FunnelController(AppDbContext context, IFunnelService funnelCreatedService,
             IApiRequestService apiRequestService, IDataRepository dataRepository,
             IParserDataService parserDataService, IHashtagApiRequestService hashtagApiRequestService,
@@ -41,26 +43,6 @@ namespace HashtagHelp.Controllers
             _googleApiRequestService = googleApiRequestService;
         }
 
-        [HttpPost("resume_tasks")]
-        public async Task<IActionResult> ResumeTasks()
-        {
-            Console.WriteLine("запуск возобновителя задач");
-            var notCompletedGeneralTasks = _dataRepository.GetNotCompletedGeneralTasks();
-            var resumeTasks = notCompletedGeneralTasks.Select(ResumeTask);
-            await Task.WhenAll(resumeTasks);
-            return Ok();
-
-            async Task ResumeTask(GeneralTaskEntity generalTask)
-            {
-                await _funnelCreatorService.SetConfigureAsync(generalTask);
-                await _dataRepository.SaveChangesAsync();
-                await _funnelCreatorService.StartTaskChainAsync();
-                await _funnelCreatorService.WaitCompletionGeneralTaskAsync();
-            }
-        }
-
-
-
         /// <summary>
         ///  Init
         /// </summary>
@@ -71,6 +53,10 @@ namespace HashtagHelp.Controllers
         {
             try
             {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
                 if (_context.ResearchedUsers == null)
                     return Problem("Entity set 'AppDbContext.ResearchedUsers' is null.");
                 var user = new UserEntity
@@ -78,7 +64,7 @@ namespace HashtagHelp.Controllers
                     NickName = requestData.NickName,
                     SocialId = requestData.Id
                 };
-                var generalTask = new GeneralTaskEntity();
+                _generalTask = new GeneralTaskEntity();
                 var collectionTask = new ParserTaskEntity();
                 var filtrationTask = new ParserTaskEntity();
 
@@ -89,30 +75,36 @@ namespace HashtagHelp.Controllers
                         NickName = name
                     });
                 };
-                generalTask.CollectionTask = collectionTask;
-                generalTask.FiltrationTask = filtrationTask;
-                generalTask.HashtagArea = requestData.HashtagArea;
-                generalTask.User = user;
-                _dataRepository.AddGeneralTask(generalTask);
+                _generalTask.CollectionTask = collectionTask;
+                _generalTask.FiltrationTask = filtrationTask;
+                _generalTask.HashtagArea = requestData.HashtagArea;
+                _generalTask.User = user;
+                _dataRepository.AddGeneralTask(_generalTask);
                 _dataRepository.AddParserTask(collectionTask);
                 _dataRepository.AddParserTask(filtrationTask);
                 _dataRepository.AddUser(user);
                 await _dataRepository.SaveChangesAsync();
-                await _funnelCreatorService.SetConfigureAsync(generalTask);
+                await _funnelCreatorService.SetConfigureAsync(_generalTask);
                 await _dataRepository.CheckAndDeleteOldRecordsAsync();
 
                 await _dataRepository.SaveChangesAsync();
                 await _funnelCreatorService.StartTaskChainAsync();
                 await _funnelCreatorService.WaitCompletionGeneralTaskAsync();
-                var funnelText = generalTask.HashtagFunnel.FunnelText;
+                var funnelText = _generalTask.HashtagFunnel.FunnelText;
                 return Ok(funnelText);
             }
             catch (Exception ex)
             {
                 _processLogger.Log(ex.ToString());
+                if (_generalTask != null)
+                {
+                    _generalTask.ErrorInfo = ex.Message;
+                    _dataRepository.UpdateGeneralTask(_generalTask);
+                    await _dataRepository.SaveChangesAsync();
+                }
                 if (ex.Message == "paid subscription only")
                 {
-                    return Problem("не оплачен инста парсер");
+                    return Problem("InstaParser or ParserIm is not paid.");
                 }
                 return Problem(ex.Message);
             }

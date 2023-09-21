@@ -6,8 +6,8 @@ namespace HashtagHelp.Services.Implementations.InstaParser
     public class InstaParserAPIRequestService : IApiRequestService
     {
         private readonly HttpClient _httpClient;
-        private readonly int maxAttempts = 5; // Максимальное количество повторных попыток
-        private readonly int maxBackoffTime = 64000; // Максимальное время отсрочки (64 секунды)
+        private readonly int maxAttempts = 5;
+        private readonly int maxBackoffTime = 64000;
 
         public InstaParserAPIRequestService(IHttpClientFactory httpFactory)
         {
@@ -16,6 +16,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
 
         private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> action)
         {
+            Exception error = null;
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 try
@@ -24,33 +25,29 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 }
                 catch (Exception ex) when (IsRetryableError(ex) && attempt < maxAttempts)
                 {
-                    Console.WriteLine("Повторяемая ошибка обнаружена");
+                    error = ex;
                     await HandleRetryableError(ex, attempt, maxBackoffTime);
                 }
                 catch (Exception ex) when (!IsRetryableError(ex))
                 {
-                    Console.WriteLine($"Неповторяемая ошибка (попытка {attempt}): {ex.Message}");
+                    Console.WriteLine("Non-repeating error (attempt " + attempt + "): " + ex.Message);
                     throw;
                 }
             }
-            throw new Exception("Не удалось выполнить действие после максимального числа повторных попыток.");
+            throw new Exception("Failed to perform the action after the maximum number of retry attempts." + error.ToString());
         }
 
         private bool IsRetryableError(Exception ex)
         {
-            // Проверяем, является ли ошибка повторяемой
-            // Возможно, здесь нужно добавить дополнительные условия для определения повторяемой ошибки
             return ex is HttpRequestException;
         }
 
         private async Task HandleRetryableError(Exception ex, int attempt, int maxBackoffTime)
         {
-            // Обработка повторяемой ошибки с задержкой перед повторной попыткой
             int randomMilliseconds = new Random().Next(1000);
             int backoffTime = Math.Min((int)Math.Pow(2, attempt) * 1000 + randomMilliseconds, maxBackoffTime);
-
-            Console.WriteLine($"Ошибка (попытка {attempt}): {ex.Message}");
-            Console.WriteLine($"Повторная попытка через {backoffTime} мс.");
+            Console.WriteLine("Error (attempt " + attempt + "): " + ex.Message);
+            Console.WriteLine("Retry in " + backoffTime + " ms.");
             await Task.Delay(backoffTime);
         }
 
@@ -71,7 +68,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             });
         }
 
-        public async Task<string> AddFollowingTagsTaskAPIAsync(string apiKey, string FollowersTaskId, List<string> researchedUsers, string url)
+        public async Task<string> AddFiltrationTaskApiAsync(string apiKey, string FollowersTaskId, List<string> researchedUsers, string url)
         {
             return await ExecuteWithRetryAsync(async () =>
             {
@@ -91,7 +88,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             });
         }
 
-        public async Task<string> AddFollowersTaskAPIAsync(string apiKey, List<string> userNames, string url)
+        public async Task<string> AddCollectionTaskApiAsync(string apiKey, List<string> userNames, string url)
         {
             return await ExecuteWithRetryAsync(async () =>
             {
@@ -125,7 +122,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                     throw new Exception(errorMessage);
                 }
                 TaskStatusResponse? taskStatus = await response.Content.ReadFromJsonAsync<TaskStatusResponse>();
-                return taskStatus;
+                return taskStatus ?? throw new Exception("taskStatus is null"); ;
             });
         }
 

@@ -29,18 +29,17 @@ namespace HashtagHelp.Services.Implementations
 
                     notCompletedGeneralTasks = dataRepository.GetNotCompletedGeneralTasks();
 
-                    Console.WriteLine("Недоделанных задач: " + notCompletedGeneralTasks.Count().ToString());
+                    Console.WriteLine("Not completed tasks: " + notCompletedGeneralTasks.Count().ToString());
 
                     var resumeTasks = notCompletedGeneralTasks.Select(ResumeTask);
                     Task.WhenAll(resumeTasks);
 
                     async Task ResumeTask(GeneralTaskEntity generalTask)
                     {
-                        Console.WriteLine("запуск возобновителя задачи");
+                        Console.WriteLine("start of task reworker");
                         using IServiceScope scope2 = _serviceScopeFactory.CreateScope();
                         var dataRepository = scope2.ServiceProvider.GetRequiredService<IDataRepository>();
                         var funnelService = scope2.ServiceProvider.GetRequiredService<IFunnelService>();
-
                         await funnelService.SetConfigureAsync(generalTask);
                         await funnelService.StartTaskChainAsync();
                         await funnelService.WaitCompletionGeneralTaskAsync();

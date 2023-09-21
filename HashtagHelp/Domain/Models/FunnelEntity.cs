@@ -1,8 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Runtime.InteropServices.JavaScript;
-
-namespace HashtagHelp.Domain.Models
+﻿namespace HashtagHelp.Domain.Models
 {
     public class FunnelEntity
     {
