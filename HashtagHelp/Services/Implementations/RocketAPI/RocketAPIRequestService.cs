@@ -12,8 +12,8 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
         private readonly string _rapidApiKeyHeader = "X-RapidAPI-Key";
         private readonly string _rapidApiHostHeader = "X-RapidAPI-Host";
         private readonly string _rapidApiHostHeaderValue = "rocketapi-for-instagram.p.rapidapi.com";
-        private readonly int _maxAttempts = 5;
-        private readonly int _maxBackoffTime = 64000;
+        private readonly int _maxAttempts = 10;
+        private readonly int _maxBackoffTime = 200000;
         private readonly string _getIdEndpoint = "/instagram/user/get_info";
         private readonly string _hashtagInfoEndpoint = "/instagram/hashtag/get_info";
 
@@ -27,7 +27,7 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
         {
             var id = await GetValuesWithRetryAsync(_maxAttempts, async () =>
             {
-                string json = "{{ \"username\": \"" + nickName + "\" }}";
+                string json = "{ \"username\": \"" + nickName + "\" }";
                 string apiUrl = _apiUrl + _getIdEndpoint;
                 var id = await GetRocketApiDataAsync(apiUrl, json);
                 return id;
@@ -44,7 +44,7 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
                 {
                     _httpClient.DefaultRequestHeaders.Add(_rapidApiKeyHeader, apiKey);
                 }
-                string jsonRequestData = "{{ \"name\": \"" + hashtag + "\" }}";
+                string jsonRequestData = "{ \"name\": \"" + hashtag + "\" }";
                 string apiUrl = _apiUrl + _hashtagInfoEndpoint;
                 var response = await GetRocketApiDataAsync(apiUrl, jsonRequestData);
                 ServerResponse serverResponse;
@@ -78,6 +78,7 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
                 Content = new StringContent(json, Encoding.UTF8, "application/json")
             };
             using var response = await _httpClient.SendAsync(request);
+            var temp = await response.Content.ReadAsStringAsync();
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsStringAsync();
         }

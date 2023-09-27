@@ -25,6 +25,7 @@ namespace HashtagHelp.Services.Implementations
         private long minTagMediaCount;
         private long maxTagMediaCount;
         private long minMediaCountInterval;
+        private int maxFollowerTagNumber;
         private int minFollowerTagsCount;
         private long hashtagsNumber;
         private TaskCompletionSource<bool> _funnelCompletionSource = new();
@@ -73,11 +74,12 @@ namespace HashtagHelp.Services.Implementations
                 _googleApiRequestService.HashtagArea = generalTask.HashtagArea;
                 hashtagApiKey = configData[3];
                 checkTimerMinutes = double.Parse(configData[5]);
-                minTagMediaCount = long.Parse(configData[11]); 
+                minTagMediaCount = long.Parse(configData[11]);
                 maxTagMediaCount = long.Parse(configData[21]);
                 minMediaCountInterval = long.Parse(configData[31]);
                 hashtagsNumber = long.Parse(configData[41]);
                 minFollowerTagsCount = int.Parse(configData[51]);
+                maxFollowerTagNumber = int.Parse(configData[61]);
             }
             catch (Exception ex)
             {
@@ -192,9 +194,9 @@ namespace HashtagHelp.Services.Implementations
                     .GetTagsTaskContentAPIAsync(instaParserKey, _generalTask.FiltrationTask.InParserId, instaParserUrl);
                 var tagFreq = _parserDataService.RedoFiles(tagsTaskContent);
                 ValidateTagFreq(tagFreq);
-                tagFreq = _parserDataService.RareFreqTagsRemove(tagFreq, minFollowerTagsCount);
+                tagFreq = _parserDataService.RareFreqTagsRemove(tagFreq, minFollowerTagsCount, maxFollowerTagNumber);
                 ValidateTagFreq(tagFreq);
-                var hashtags = await ProcessHashtagsAsync(tagFreq);
+                var parsedHashtagEntities = await ProcessHashtagsAsync(tagFreq);
                 var areaHashtags = await _googleApiRequestService.GetAreaHashtags();
                 areaHashtags = areaHashtags
                     .Select(word => word.TrimStart('#').Trim())
@@ -203,16 +205,12 @@ namespace HashtagHelp.Services.Implementations
                 var areaHashtagsEntities = await ProcessHashtagsAsync(areaHashtags
                     .GroupBy(x => x)
                     .ToDictionary(group => group.Key, group => 50));
-                hashtags.AddRange(areaHashtagsEntities);
+                //parsedHashtagEntities.AddRange(areaHashtagsEntities);
                 var funnel = new FunnelEntity(minTagMediaCount, maxTagMediaCount, minMediaCountInterval, hashtagsNumber);
-                var funelLines = _parserDataService.CreateFunnels(funnel, hashtags);
+                var funelLines = _parserDataService.CreateFunnels(funnel, parsedHashtagEntities, areaHashtagsEntities);
                 funnel.FunnelText = string.Join("", funelLines);
-
                 var directoryOutFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "funnefreqOut.txt");
-                foreach (var hashtag in hashtags)
-                {
-                    File.AppendAllText(directoryOutFile, hashtag.Name + '\t' + hashtag.MediaCount + Environment.NewLine);
-                }//это для работы дома
+                File.AppendAllText(directoryOutFile, funnel.FunnelText);
                 _generalTask.HashtagFunnel = funnel;
                 _funnelCompletionSource.SetResult(true);
             }
@@ -226,9 +224,10 @@ namespace HashtagHelp.Services.Implementations
 
         static bool ContainsWrongSymbols(string text)
         {
-            var value = !Regex.IsMatch(text, @"^[\p{L}0-9_]+$");
+            var value = Regex.IsMatch(text, @"[^a-zA-Zа-яА-Я0-9_]");
             return value;
         }
+
 
         public async Task WaitCompletionGeneralTaskAsync()
         {
@@ -330,9 +329,9 @@ namespace HashtagHelp.Services.Implementations
                 Console.WriteLine(taskStatus.tid_status);
                 if (taskStatus.tid_status == "completed")
                 {
-                   /*  _generalTask.Status = StatusTaskEnum.Filtrated;
+                    /* _generalTask.Status = StatusTaskEnum.Filtrated;
                     _dataRepository.UpdateGeneralTask(_generalTask);
-                    await _dataRepository.SaveChangesAsync();  */
+                    await _dataRepository.SaveChangesAsync(); */
                     await FunnelCreateAsync();
                     await filtrationTimer.DisposeAsync();
                 }

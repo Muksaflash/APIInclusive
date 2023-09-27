@@ -140,5 +140,10 @@ namespace HashtagHelp.Services.Implementations
                 await _context.SaveChangesAsync();
             }
         }
+
+        public IQueryable<GeneralTaskEntity> GetGeneralTaskEntities()
+        {
+            return _context.GeneralTasks;
+        }
     }
 }
