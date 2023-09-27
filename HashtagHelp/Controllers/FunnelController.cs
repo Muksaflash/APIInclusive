@@ -3,6 +3,7 @@ using HashtagHelp.Domain.Models;
 using HashtagHelp.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using HashtagHelp.Domain.RequestModels;
+using MySqlX.XDevAPI.Common;
 
 namespace HashtagHelp.Controllers
 {
@@ -42,6 +43,23 @@ namespace HashtagHelp.Controllers
             _processLogger = processLogger;
             _googleApiRequestService = googleApiRequestService;
         }
+
+        [HttpGet]
+        public ActionResult<string> GetGeneralTasks()
+        {
+            var result = _dataRepository.GetGeneralTaskEntities();
+            if (result == null) return Problem("General tasks are not exist");;
+            return Ok(result);
+        }
+
+        /* // GET: api/sample/{id}
+        [HttpGet("{id}")]
+        public IActionResult GetById(int id)
+        {
+            // Возвращаем результат GET-запроса с параметром
+            var result = $"Это GET-запрос с параметром id={id}";
+            return Ok(result);
+        } */
 
         /// <summary>
         ///  Init

@@ -1,4 +1,4 @@
-using HashtagHelp.Domain.ExternalApiModels.BulkLatest;
+/* using HashtagHelp.Domain.ExternalApiModels.BulkLatest;
 using HashtagHelp.Services.Interfaces;
 using Newtonsoft.Json;
 
@@ -101,4 +101,4 @@ namespace HashtagHelp.Services.Implementations.RocketAPI
             await Task.Delay(backoffTime);
         }
     }
-}
+}  */

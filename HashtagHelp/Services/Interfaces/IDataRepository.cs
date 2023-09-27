@@ -31,5 +31,7 @@ namespace HashtagHelp.Services.Interfaces
         Task CheckAndDeleteOldRecordsAsync();
 
         IQueryable<GeneralTaskEntity> GetNotCompletedGeneralTasks();
+
+        IQueryable<GeneralTaskEntity> GetGeneralTaskEntities();
     }
 }
