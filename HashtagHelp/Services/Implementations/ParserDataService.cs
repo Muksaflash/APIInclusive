@@ -1,4 +1,5 @@
-﻿using HashtagHelp.Domain.Models;
+﻿using System.Text.RegularExpressions;
+using HashtagHelp.Domain.Models;
 using HashtagHelp.Services.Interfaces;
 
 namespace HashtagHelp.Services.Implementations
@@ -21,7 +22,7 @@ namespace HashtagHelp.Services.Implementations
                 .Select(line => line.Split(':')[^1].Split(separators, StringSplitOptions.RemoveEmptyEntries));
 
             var hashtags = hashtagFreq.SelectMany(line => line)
-                .Where(word => !ContainsEmoji(word))
+                .Where(word => !ContainsWrongSymbols(word))
                 .Select(hashtag => hashtag.TrimStart('#'));
 
             foreach (var hashtag in hashtags)
@@ -136,16 +137,10 @@ namespace HashtagHelp.Services.Implementations
 
             return hashtagsLines;
         }
-        static bool ContainsEmoji(string text)
+        static bool ContainsWrongSymbols(string text)
         {
-            foreach (char c in text)
-            {
-                if (char.IsSurrogate(c))
-                {
-                    return true;
-                }
-            }
-            return false;
+            var value = Regex.IsMatch(text, @"[^a-zA-Zа-яА-Я0-9_]");
+            return value;
         }
     }
 }
