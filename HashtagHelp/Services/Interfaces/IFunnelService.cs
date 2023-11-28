@@ -1,5 +1,4 @@
 ﻿using HashtagHelp.Domain.Models;
-using HashtagHelp.Domain.RequestModels;
 
 namespace HashtagHelp.Services.Interfaces
 {
@@ -9,6 +8,8 @@ namespace HashtagHelp.Services.Interfaces
         Task StartTaskChainAsync();
 
         Task SetConfigureAsync(GeneralTaskEntity generalTask);
+
+        Task SetGoogleSheetsFunnelConfigureAsync(GoogleSheetsFunnelTaskEntity googleSheetsFunnelTask);
 
         Task WaitCompletionGeneralTaskAsync();
     }

@@ -1,9 +1,10 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using HashtagHelp.Domain.Models;
+using HashtagHelp.Services.Interfaces;
 
 namespace HashtagHelp.Services.Implementations
 {
-    public class ParserDataService //: IParserDataService
+    public class ParserDataServiceNew : IParserDataService
     {
         readonly char separator = Path.DirectorySeparatorChar;
 
@@ -12,17 +13,18 @@ namespace HashtagHelp.Services.Implementations
         public Dictionary<string, int> RedoFiles(string tagsTaskContent)
         {
             var freqDict = new Dictionary<string, int>();
-            char[] separators = new char[] { ' ', ',' };
+            char[] separators = new char[] { ' ', ',', '\t'};
 
             IEnumerable<IEnumerable<string>> hashtagFreq = tagsTaskContent
                 .Split('\n')
-                //.Where(line => line.Split(':').Length < 15)
+                .Where(line => line.Split(':').Length < 15)
                 .Where(line => line.Split(':')[^1] != 0.ToString())
                 .Select(line => line.Split(':')[^1].Split(separators, StringSplitOptions.RemoveEmptyEntries));
 
             var hashtags = hashtagFreq.SelectMany(line => line)
-                .Where(word => !ContainsWrongSymbols(word))
-                .Select(hashtag => hashtag.TrimStart('#'));
+                .Select(hashtag => hashtag.TrimStart('#'))
+                .Where(word => !ContainsWrongSymbols(word));
+
 
             foreach (var hashtag in hashtags)
             {
@@ -54,7 +56,7 @@ namespace HashtagHelp.Services.Implementations
             return hashtagFreq1.ToDictionary(group => group.Key, group => group.ToList())
                 .OrderBy(group => group.Key);
         }
-        public List<string> CreateFunnels(FunnelEntity model, List<HashtagEntity> parsedHashtagEntities, List<HashtagEntity> areaHashtagEntities)
+        public List<string> CreateFunnels(FunnelEntity model)
         {
 
             var floorFreq = model.MinTagMediaCount;
@@ -62,8 +64,9 @@ namespace HashtagHelp.Services.Implementations
             var freqStep = model.MinMediaCountInterval;
             var hashtagFunnelNumber = model.HashtagsNumber;
 
-            var parsedHashtagFreq = PrepareDict(parsedHashtagEntities, floorFreq, topFreq);
-            var areaHashtagFreq = PrepareDict(areaHashtagEntities, floorFreq, topFreq);
+            var parsedHashtagFreq = PrepareDict(model.ParsedHashtagEntities, floorFreq, topFreq);
+            var areaHashtagFreq = PrepareDict(model.AreaHashtagEntities, floorFreq, topFreq);
+            var semiAreaHashtagFreq = PrepareDict(model.SemiAreaHashtagEntities, floorFreq, topFreq);
 
             var count = parsedHashtagFreq.ToList().Count;
             long nextBound = floorFreq;
@@ -74,49 +77,47 @@ namespace HashtagHelp.Services.Implementations
 
             var hashtagsLines = new List<string>();
             var funnelsCount = 0;
+            long partSize = 0;
 
             while (!isDictEmpty)
             {
                 nextBound = floorFreq;
                 hashtagFunnelCount = hashtagFunnelNumber;
+                partSize = hashtagFunnelNumber / 3;
+
                 funnelsCount++;
                 hashtagsLines.Add($"Воронка {funnelsCount}:\n\n");
-                foreach (var item in parsedHashtagFreq)
+                for (int pack = 0; pack < 3; pack++)
                 {
-                    if (item.Key >= nextBound - 200 && item.Value.Count != 0)
+                    hashtagsLines.Add("\n");
+                    for (int part = 0; part < 3; part++)
                     {
-                        var hashtagString = $"#{item.Value[0]}\n";
-                        hashtagsLines.Add(hashtagString);
-                        item.Value.RemoveAt(0);
-                        nextBound = item.Key + freqStep;
-
-                        if (--hashtagFunnelCount == 0)
+                        var currentDictionary = part == 0 ? areaHashtagFreq : part == 1 ? semiAreaHashtagFreq : parsedHashtagFreq;
+                        foreach (var item in currentDictionary)
                         {
-                            fullPacksCount++;
-                            hashtagFunnelCount = hashtagFunnelNumber;
-                            hashtagsLines.Add("\n");
-                        }
-                        foreach (var item1 in areaHashtagFreq)
-                        {
-                            if (item1.Key >= nextBound - 200 && item1.Value.Count != 0)
+                            if (item.Key >= nextBound - 200 && item.Value.Count != 0)
                             {
-                                var hashtagString1 = $"#{item1.Value[0]}\n";
-                                hashtagsLines.Add(hashtagString1);
-                                item1.Value.RemoveAt(0);
-                                nextBound = item1.Key + freqStep;
-
+                                //var hashtagString = $"#{item.Value[0]}" + " " + $"{item.Key}" +" "+ $"{part} \n";
+                                var hashtagString = $"#{item.Value[0]}\n";
+                                hashtagsLines.Add(hashtagString);
+                                item.Value.RemoveAt(0);
+                                //nextBound = item.Key + freqStep;
+                                nextBound += freqStep;
                                 if (--hashtagFunnelCount == 0)
                                 {
                                     fullPacksCount++;
                                     hashtagFunnelCount = hashtagFunnelNumber;
-                                    hashtagsLines.Add("\n");
                                 }
-                                break;
+                                if (--partSize == 0)
+                                {
+                                    partSize = hashtagFunnelNumber / 3;
+                                    break;
+                                }
                             }
                         }
                     }
                 }
-                isDictEmpty = !parsedHashtagFreq.Any(item => item.Value.Count != 0) || !areaHashtagFreq.Any(item => item.Value.Count != 0);
+                isDictEmpty = !parsedHashtagFreq.Any(item => item.Value.Count != 0) && !areaHashtagFreq.Any(item => item.Value.Count != 0) && !semiAreaHashtagFreq.Any(item => item.Value.Count != 0);
                 hashtagsLines.Add("\n");
             }
 

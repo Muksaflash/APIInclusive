@@ -3,7 +3,6 @@ using HashtagHelp.Domain.Models;
 using HashtagHelp.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using HashtagHelp.Domain.RequestModels;
-using MySqlX.XDevAPI.Common;
 
 namespace HashtagHelp.Controllers
 {
@@ -29,6 +28,8 @@ namespace HashtagHelp.Controllers
 
         private GeneralTaskEntity? _generalTask;
 
+        private GoogleSheetsFunnelTaskEntity? _googleSheetsFunnelTask;
+
         public FunnelController(AppDbContext context, IFunnelService funnelCreatedService,
             IApiRequestService apiRequestService, IDataRepository dataRepository,
             IParserDataService parserDataService, IHashtagApiRequestService hashtagApiRequestService,
@@ -44,22 +45,78 @@ namespace HashtagHelp.Controllers
             _googleApiRequestService = googleApiRequestService;
         }
 
+        [HttpPost("googleSheetsUpload")]
+        public async Task<ActionResult<string>> GoogleSheetsUpload([FromBody] GoogleSheetsFunnelRequestModel requestData)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+                _googleSheetsFunnelTask = new GoogleSheetsFunnelTaskEntity
+                {
+                    SemiAreasSheetName = requestData.SemiAreasSheetName,
+                    TableId = requestData.TableName,
+                    ParsedSheetName = requestData.ParsedSheetName,
+                    MinHashtagFollowers = requestData.MinHashtagFollowers,
+                    AreaSheetName = requestData.AreaSheetName,
+                    OutputGoogleSheet = requestData.OutputGoogleSheet
+                };
+                await _funnelCreatorService.SetGoogleSheetsFunnelConfigureAsync(_googleSheetsFunnelTask);
+                await _funnelCreatorService.StartTaskChainAsync();
+                await _funnelCreatorService.WaitCompletionGeneralTaskAsync();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Произошла ошибка: {ex.Message}");
+            }
+        } 
+
         [HttpGet]
         public ActionResult<string> GetGeneralTasks()
         {
             var result = _dataRepository.GetGeneralTaskEntities();
-            if (result == null) return Problem("General tasks are not exist");;
+            if (result == null) return Problem("General tasks are not exist"); ;
             return Ok(result);
         }
 
-        /* // GET: api/sample/{id}
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        [HttpPost("{id}")]
+        public async Task<ActionResult<string>> ResumeTaskById([FromBody] string taskId)
         {
-            // Возвращаем результат GET-запроса с параметром
-            var result = $"Это GET-запрос с параметром id={id}";
-            return Ok(result);
-        } */
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+                if (_context.ResearchedUsers == null)
+                    return Problem("Entity set 'AppDbContext.ResearchedUsers' is null.");
+                _generalTask = _dataRepository.GetGeneralTaskEntityById(taskId);
+                await _funnelCreatorService.SetConfigureAsync(_generalTask);
+                await _dataRepository.CheckAndDeleteOldRecordsAsync();
+                await _funnelCreatorService.StartTaskChainAsync();
+                await _funnelCreatorService.WaitCompletionGeneralTaskAsync();
+                var funnelText = _generalTask.HashtagFunnel.FunnelText;
+                return Ok(funnelText);
+            }
+            catch (Exception ex)
+            {
+                _processLogger.Log(ex.ToString());
+                if (_generalTask != null)
+                {
+                    _generalTask.ErrorInfo = ex.Message;
+                    _dataRepository.UpdateGeneralTask(_generalTask);
+                    await _dataRepository.SaveChangesAsync();
+                }
+                if (ex.Message == "paid subscription only")
+                {
+                    return Problem("InstaParser or ParserIm is not paid.");
+                }
+                return Problem(ex.Message);
+            }
+        }
 
         /// <summary>
         ///  Init
@@ -96,6 +153,7 @@ namespace HashtagHelp.Controllers
                 _generalTask.CollectionTask = collectionTask;
                 _generalTask.FiltrationTask = filtrationTask;
                 _generalTask.HashtagArea = requestData.HashtagArea;
+                _generalTask.HashtagSemiAreas = string.Join(", ", requestData.HashtagSemiAreas);
                 _generalTask.User = user;
                 _dataRepository.AddGeneralTask(_generalTask);
                 _dataRepository.AddParserTask(collectionTask);
@@ -104,7 +162,6 @@ namespace HashtagHelp.Controllers
                 await _dataRepository.SaveChangesAsync();
                 await _funnelCreatorService.SetConfigureAsync(_generalTask);
                 await _dataRepository.CheckAndDeleteOldRecordsAsync();
-
                 await _dataRepository.SaveChangesAsync();
                 await _funnelCreatorService.StartTaskChainAsync();
                 await _funnelCreatorService.WaitCompletionGeneralTaskAsync();

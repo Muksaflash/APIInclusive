@@ -33,5 +33,7 @@ namespace HashtagHelp.Services.Interfaces
         IQueryable<GeneralTaskEntity> GetNotCompletedGeneralTasks();
 
         IQueryable<GeneralTaskEntity> GetGeneralTaskEntities();
+
+        GeneralTaskEntity GetGeneralTaskEntityById(string generalTaskId);
     }
 }

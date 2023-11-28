@@ -9,6 +9,12 @@ namespace HashtagHelp.Services.Implementations.InstaParser
     public class GoogleRequestApiService : IGoogleApiRequestService
     {
         public string HashtagArea { get; set; }
+        public List<string> HashtagSemiAreas { get; set; }
+        public string UserAreaHashtagsSheetName { get; set; }
+        public string UserSemiAreasHashtagsSheetName { get; set; }
+        public string UserParsedHashtagsSheetName { get; set; }
+        public string UserTable { get; set; }
+        public string UserOutputSheet { get; set; }
         private readonly string _configGoogleSpreadsheetID = "1BXVyKV6ScRArAx3qdYxqOiHPJsO5ByfBrSs58I8vojA";
         private readonly string _configGoogleSheet = "config1";
         private readonly string _spreadsheetId = "1GB4pkp8M2H2twaliGdhD5pEDlsmEPC9gBT_FUmPq270";
@@ -18,6 +24,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
         private readonly string _credentialFileName = "hashtaghelp-13d38e1b1284.json";
         private readonly string _applicationName = "HashtagHelp";
         private readonly string _configRange = "!A2:Z";
+        private readonly string _allRange = "!A1:Z";
         private readonly string _areaHashtagsRange = "!A1:B";
         private readonly string _areasListRange = "!A2:A";
 
@@ -36,7 +43,7 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             });
         }
 
-        public async Task<List<string>> GetAllConfigSheetData()
+        public async Task<List<string>> GetAllConfigSheetDataAsync()
         {
             return await ExecuteWithRetryAsync(_maxAttempts, async () =>
             {
@@ -61,32 +68,45 @@ namespace HashtagHelp.Services.Implementations.InstaParser
                 return Data;
             });
         }
+        public async Task<List<string>> GetSemiAreaHashtags()
+        {
+            List<string> hashtags = new();
+            foreach (var area in HashtagSemiAreas)
+            {
+                hashtags.AddRange(await GetSheetHashtags(area));
+            }
+            return hashtags;
+        }
+
+        public async Task<List<string>> GetSheetHashtags(string sheetName)
+        {
+            return await ExecuteWithRetryAsync(_maxAttempts, async () =>
+           {
+               string range = sheetName + _areaHashtagsRange;
+               SpreadsheetsResource.ValuesResource.GetRequest request =
+                   _sheetsService.Spreadsheets.Values.Get(_spreadsheetId, range);
+
+               request.MajorDimension = SpreadsheetsResource.ValuesResource.GetRequest.MajorDimensionEnum.ROWS;
+
+               ValueRange response = await request.ExecuteAsync();
+               IList<IList<object>> values = response.Values;
+               List<string> hashtags = new();
+
+               if (values != null && values.Count > 0)
+               {
+                   foreach (var row in values)
+                   {
+                       var hashtag = row[0].ToString().Trim();
+                       hashtags.Add(hashtag);
+                   }
+               }
+               return hashtags;
+           });
+        }
 
         public async Task<List<string>> GetAreaHashtags()
         {
-            return await ExecuteWithRetryAsync(_maxAttempts, async () =>
-            {
-                string sheetName = HashtagArea;
-                string range = sheetName + _areaHashtagsRange;
-                SpreadsheetsResource.ValuesResource.GetRequest request =
-                    _sheetsService.Spreadsheets.Values.Get(_spreadsheetId, range);
-
-                request.MajorDimension = SpreadsheetsResource.ValuesResource.GetRequest.MajorDimensionEnum.ROWS;
-
-                ValueRange response = await request.ExecuteAsync();
-                IList<IList<object>> values = response.Values;
-                List<string> hashtags = new();
-
-                if (values != null && values.Count > 0)
-                {
-                    foreach (var row in values)
-                    {
-                        var hashtag = row[0].ToString().Trim();
-                        hashtags.Add(hashtag);
-                    }
-                }
-                return hashtags;
-            });
+            return await GetSheetHashtags(HashtagArea);
         }
 
         public async Task<List<string>> GetAreasListAsync()
@@ -184,6 +204,101 @@ namespace HashtagHelp.Services.Implementations.InstaParser
             Console.WriteLine("Error (attempt " + attempt + "): " + ex.Message);
             Console.WriteLine("Retry in " + backoffTime + " ms.");
             await Task.Delay(backoffTime);
+        }
+
+        public async Task<List<string>> GetUserParsedContentAsync()
+        {
+            return await ExecuteWithRetryAsync(_maxAttempts, async () =>
+            {
+                string range = UserParsedHashtagsSheetName + _allRange;
+                SpreadsheetsResource.ValuesResource.GetRequest request =
+                    _sheetsService.Spreadsheets.Values.Get(UserTable, range);
+
+                ValueRange response = await request.ExecuteAsync();
+                IList<IList<object>> values = response.Values;
+                List<string> Data = new();
+
+                if (values != null && values.Count > 0)
+                {
+                    foreach (var row in values)
+                    {
+                        foreach (var cell in row)
+                        {
+                            Data.Add(cell.ToString().Trim());
+                        }
+                    }
+                }
+                return Data;
+            });
+        }
+
+        public async Task<List<string>> GetUserAreaHashtagsAsync()
+        {
+            return await ExecuteWithRetryAsync(_maxAttempts, async () =>
+            {
+                string range = UserAreaHashtagsSheetName + _allRange;
+                SpreadsheetsResource.ValuesResource.GetRequest request =
+                    _sheetsService.Spreadsheets.Values.Get(UserTable, range);
+
+                ValueRange response = await request.ExecuteAsync();
+                IList<IList<object>> values = response.Values;
+                List<string> Data = new();
+
+                if (values != null && values.Count > 0)
+                {
+                    foreach (var row in values)
+                    {
+                        foreach (var cell in row)
+                        {
+                            Data.Add(cell.ToString().Trim());
+                        }
+                    }
+                }
+                return Data;
+            });
+        }
+
+        public async Task<List<string>> GetUserSemiAreaHashtagsAsync()
+        {
+            return await ExecuteWithRetryAsync(_maxAttempts, async () =>
+            {
+                string range = UserSemiAreasHashtagsSheetName + _allRange;
+                SpreadsheetsResource.ValuesResource.GetRequest request =
+                    _sheetsService.Spreadsheets.Values.Get(UserTable, range);
+
+                ValueRange response = await request.ExecuteAsync();
+                IList<IList<object>> values = response.Values;
+                List<string> Data = new();
+
+                if (values != null && values.Count > 0)
+                {
+                    foreach (var row in values)
+                    {
+                        foreach (var cell in row)
+                        {
+                            Data.Add(cell.ToString().Trim());
+                        }
+                    }
+                }
+                return Data;
+            });
+        }
+        public async Task PublicListAsync(List<string> stringList)
+        {
+            await ExecuteWithRetryAsync(_maxAttempts, async () =>
+            {
+                string range = $"{UserOutputSheet}!A1";
+                List<IList<object>> values = stringList.Select(item => new List<object> { item } as IList<object>).ToList();
+                ValueRange updateRequest = new ValueRange
+                {
+                    Values = values,
+                };
+                SpreadsheetsResource.ValuesResource.UpdateRequest updateCellRequest =
+                    _sheetsService.Spreadsheets.Values.Update(updateRequest, UserTable, range);
+                updateCellRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+                await updateCellRequest.ExecuteAsync();
+                return true;
+            });
         }
     }
 }
