@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HashtagHelp.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230918123306_AddErrorInfoToGeneralTask")]
-    partial class AddErrorInfoToGeneralTask
+    [Migration("20231020115504_AddSemiAreasToGeneralTask")]
+    partial class AddSemiAreasToGeneralTask
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -21,35 +21,6 @@ namespace HashtagHelp.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "7.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
-
-            modelBuilder.Entity("HashtagHelp.Domain.Models.FunnelEntity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("FunnelText")
-                        .HasColumnType("longtext");
-
-                    b.Property<long>("HashtagsNumber")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("MaxTagMediaCount")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("MinFollowersTagFreq")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("MinMediaCountInterval")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("MinTagMediaCount")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("FunnelEntity");
-                });
 
             modelBuilder.Entity("HashtagHelp.Domain.Models.GeneralTaskEntity", b =>
                 {
@@ -68,6 +39,10 @@ namespace HashtagHelp.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<string>("HashtagArea")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("HashtagSemiAreas")
                         .IsRequired()
                         .HasColumnType("longtext");
 
@@ -193,13 +168,8 @@ namespace HashtagHelp.Migrations
                     b.Property<uint>("FollowersNumber")
                         .HasColumnType("int unsigned");
 
-                    b.Property<Guid?>("FunnelId")
-                        .HasColumnType("char(36)");
-
                     b.Property<Guid?>("ParserTaskEntityId")
                         .HasColumnType("char(36)");
-
-                    b.HasIndex("FunnelId");
 
                     b.HasIndex("ParserTaskEntityId");
 
@@ -243,15 +213,9 @@ namespace HashtagHelp.Migrations
 
             modelBuilder.Entity("HashtagHelp.Domain.Models.ResearchedUserEntity", b =>
                 {
-                    b.HasOne("HashtagHelp.Domain.Models.FunnelEntity", "Funnel")
-                        .WithMany()
-                        .HasForeignKey("FunnelId");
-
                     b.HasOne("HashtagHelp.Domain.Models.ParserTaskEntity", null)
                         .WithMany("ResearchedUsers")
                         .HasForeignKey("ParserTaskEntityId");
-
-                    b.Navigation("Funnel");
                 });
 
             modelBuilder.Entity("HashtagHelp.Domain.Models.ParserTaskEntity", b =>

@@ -8,7 +8,7 @@ namespace HashtagHelp.DAL
         public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
         {
-            Database.EnsureCreated();
+            Database.EnsureCreated();//обработать тут ошибки! и вокруг вообще
         }
 
         public DbSet<FollowerEntity> Followers { get; set; } = null!;
@@ -25,8 +25,11 @@ namespace HashtagHelp.DAL
                 .Property(p => p.Status)
                 .HasConversion<string>();
             modelBuilder.Entity<GeneralTaskEntity>()
-                .Property(p => p.ErrorInfo) // Новое свойство
-                .HasColumnType("LONGTEXT"); // Пример конфигурации типа столбца
+                .Property(p => p.ErrorInfo)
+                .HasColumnType("LONGTEXT");
+            modelBuilder.Entity<GeneralTaskEntity>()
+                .Property(p => p.HashtagSemiAreas)
+                .HasColumnType("LONGTEXT");
             base.OnModelCreating(modelBuilder);
         }
     }

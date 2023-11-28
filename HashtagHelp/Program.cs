@@ -5,10 +5,16 @@ using HashtagHelp.Services.Implementations.RocketAPI;
 using HashtagHelp.Services.Implementations.InstaParser;
 using HashtagHelp.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+        {
+            // Указываем, что используется StringEnumConverter для сериализации перечислений
+            options.SerializerSettings.Converters.Add(new StringEnumConverter());
+        });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 var connectionString = builder.Configuration.GetConnectionString("MYSQL");
 if (connectionString != null)
@@ -20,13 +26,13 @@ if (connectionString != null)
 builder.Services.AddScoped<IFunnelService, FunnelService>();
 builder.Services.AddScoped<IApiRequestService, InstaParserAPIRequestService>();
 builder.Services.AddScoped<IDataRepository, DataRepository>();
-builder.Services.AddScoped<IParserDataService, ParserDataService>();
+builder.Services.AddScoped<IParserDataService, ParserDataServiceNew>();
 builder.Services.AddScoped<IHashtagApiRequestService, RocketAPIRequestService>();
 builder.Services.AddTransient<IProcessLogger, DesktopFileLogger>();
 builder.Services.AddScoped<IGoogleApiRequestService, GoogleRequestApiService>();
 
 builder.Services.AddHostedService<TaskManagerService>();
-builder.Services.AddHttpClient(); 
+builder.Services.AddHttpClient();
 
 
 

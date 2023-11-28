@@ -143,7 +143,19 @@ namespace HashtagHelp.Services.Implementations
 
         public IQueryable<GeneralTaskEntity> GetGeneralTaskEntities()
         {
-            return _context.GeneralTasks;
+            return _context.GeneralTasks
+                .Include(r => r.User);
+        }
+
+        public GeneralTaskEntity GetGeneralTaskEntityById(string generalTaskId)
+        {
+            return _context.GeneralTasks
+                .Include(r => r.CollectionTask)
+                    .ThenInclude(ct => ct.ResearchedUsers)
+                .Include(r => r.FiltrationTask)
+                .Include(r => r.User)
+                .Where(r => r.Id.ToString() == generalTaskId)
+                .FirstOrDefault() ?? throw new Exception("_context.GeneralTasks is null");
         }
     }
 }

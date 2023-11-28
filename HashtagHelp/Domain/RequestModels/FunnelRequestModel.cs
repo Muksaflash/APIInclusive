@@ -14,6 +14,9 @@ namespace HashtagHelp.Domain.RequestModels
         public List<string> RequestNickNames { get; set; } = new List<string>();
 
         [Required(ErrorMessage = "The HashtagArea field is required.")]
+
         public string HashtagArea { get; set; } = string.Empty;
+        
+        public List<string> HashtagSemiAreas { get; set; } = new();
     }
 }

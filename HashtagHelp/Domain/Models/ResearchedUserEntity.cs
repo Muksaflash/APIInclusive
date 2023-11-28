@@ -21,7 +21,7 @@ namespace HashtagHelp.Domain.Models
 
         public List<FollowerEntity> Followers { get; set; } = new List<FollowerEntity>();
 
-        public FunnelEntity? Funnel { get; set; }
+        //public FunnelEntity? Funnel { get; set; }
 
         public async Task GetFollowersAsync()
         {
