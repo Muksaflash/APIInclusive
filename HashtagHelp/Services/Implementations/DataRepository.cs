@@ -25,9 +25,24 @@ namespace HashtagHelp.Services.Implementations
             _context.GeneralTasks.Add(generalTask);
         }
 
+        public void AddFunnelServiceInfo(FunnelServiceInfoEntity funnelServiceInfo)
+        {
+            _context.FunnelServiceInfos.Add(funnelServiceInfo);
+        }
+
         public void UpdateGeneralTask(GeneralTaskEntity generalTask)
         {
             _context.GeneralTasks.Update(generalTask);
+        }
+
+        public void UpdateFunnelServiceInfo(FunnelServiceInfoEntity funnelServiceInfo)
+        {
+            _context.FunnelServiceInfos.Update(funnelServiceInfo);
+        }
+
+        public void DeleteFunnelServiceInfo(FunnelServiceInfoEntity funnelServiceInfo)
+        {
+            _context.FunnelServiceInfos.Remove(funnelServiceInfo);
         }
 
         public void AddParserTask(ParserTaskEntity task)
@@ -156,6 +171,20 @@ namespace HashtagHelp.Services.Implementations
                 .Include(r => r.User)
                 .Where(r => r.Id.ToString() == generalTaskId)
                 .FirstOrDefault() ?? throw new Exception("_context.GeneralTasks is null");
+        }
+
+        public FunnelServiceInfoEntity GetFunnelServiceInfoEntityById(string Id)
+        {
+            try
+            {
+            return _context.FunnelServiceInfos
+                .Where(r => r.Id == Guid.Parse(Id))
+                .FirstOrDefault() ?? throw new Exception("No true Id");
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }

@@ -30,6 +30,8 @@ namespace HashtagHelp.Controllers
 
         private GoogleSheetsFunnelTaskEntity? _googleSheetsFunnelTask;
 
+        private FunnelServiceInfoEntity? _funnelServiceInfo;
+
         public FunnelController(AppDbContext context, IFunnelService funnelCreatedService,
             IApiRequestService apiRequestService, IDataRepository dataRepository,
             IParserDataService parserDataService, IHashtagApiRequestService hashtagApiRequestService,
@@ -54,6 +56,15 @@ namespace HashtagHelp.Controllers
                 {
                     return BadRequest(ModelState);
                 }
+
+                _funnelServiceInfo = new FunnelServiceInfoEntity();
+
+                if (!Guid.TryParse(requestData.Id, out var guidResult))
+                    throw new Exception("Id cannot represents a globally unique identifier (GUID)");
+                _funnelServiceInfo.Id = guidResult;
+                _dataRepository.AddFunnelServiceInfo(_funnelServiceInfo);
+                await _dataRepository.SaveChangesAsync();
+
                 _googleSheetsFunnelTask = new GoogleSheetsFunnelTaskEntity
                 {
                     SemiAreasSheetName = requestData.SemiAreasSheetName,
@@ -63,22 +74,38 @@ namespace HashtagHelp.Controllers
                     AreaSheetName = requestData.AreaSheetName,
                     OutputGoogleSheet = requestData.OutputGoogleSheet
                 };
-                await _funnelCreatorService.SetGoogleSheetsFunnelConfigureAsync(_googleSheetsFunnelTask);
+                await _funnelCreatorService.SetGoogleSheetsFunnelConfigureAsync(_googleSheetsFunnelTask, _funnelServiceInfo);
                 await _funnelCreatorService.StartTaskChainAsync();
-                await _funnelCreatorService.WaitCompletionGeneralTaskAsync();
                 return Ok();
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Произошла ошибка: {ex.Message}");
+                return StatusCode(500, $"Exception: {ex.Message}");
             }
-        } 
+        }
+
+        [HttpGet("info/{Id}")]
+        public ActionResult<string> GetFunnelServiceInfo(string Id)
+        {
+            try
+            {
+                var result = _dataRepository.GetFunnelServiceInfoEntityById(Id);
+                if (result == null)
+                    return Problem("Funnel Service Info does not exist");
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Problem(ex.Message);
+            }
+        }
 
         [HttpGet]
         public ActionResult<string> GetGeneralTasks()
         {
             var result = _dataRepository.GetGeneralTaskEntities();
-            if (result == null) return Problem("General tasks are not exist"); ;
+            if (result == null) return Problem("General tasks are not exist");
             return Ok(result);
         }
 
@@ -128,6 +155,7 @@ namespace HashtagHelp.Controllers
         {
             try
             {
+                // добавить Фуннел сервис инфо
                 if (!ModelState.IsValid)
                 {
                     return BadRequest(ModelState);
