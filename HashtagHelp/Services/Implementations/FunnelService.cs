@@ -21,6 +21,7 @@ namespace HashtagHelp.Services.Implementations
         private string instaParserUrl;
         private string hashtagApiKey;
         private GeneralTaskEntity _generalTask;
+        private FunnelServiceInfoEntity _funnelServiceInfo;
         private GoogleSheetsFunnelTaskEntity _googleSheetsFunnelTask;
         private double checkTimerMinutes;
         private long minTagMediaCount;
@@ -29,12 +30,11 @@ namespace HashtagHelp.Services.Implementations
         private int minTagFollowersNumber;
         private int minFollowerTagsCount;
         private long hashtagsNumber;
+        private int hashtagsReadyNumber;
         private TaskCompletionSource<bool> _funnelCompletionSource = new();
         private readonly SemaphoreSlim semaphore = new(1);
         private readonly string _hashtagEntityAdress = "HashtagHelp.Domain.Models.HashtagEntity";
         
-
-
         public FunnelService(IApiRequestService apiRequestService, IHashtagApiRequestService hashtagApiRequestService,
         IProcessLogger processLogger, IParserDataService parserDataService, IDataRepository dataRepository,
         IGoogleApiRequestService googleApiRequestService)
@@ -47,12 +47,13 @@ namespace HashtagHelp.Services.Implementations
             _dataRepository = dataRepository;
         }
 
-        public async Task SetGoogleSheetsFunnelConfigureAsync(GoogleSheetsFunnelTaskEntity googleSheetsFunnelTask)
+        public async Task SetGoogleSheetsFunnelConfigureAsync(GoogleSheetsFunnelTaskEntity googleSheetsFunnelTask, FunnelServiceInfoEntity funnelServiceInfo)
         {
             try
             {
                 var configData = await _googleApiRequestService.GetAllConfigSheetDataAsync();
                 _googleSheetsFunnelTask = googleSheetsFunnelTask;
+                _funnelServiceInfo = funnelServiceInfo;
                 if (googleSheetsFunnelTask.Status == StatusTaskEnum.Initiated)
                 {
                     _googleSheetsFunnelTask.Status = StatusTaskEnum.Configured;
@@ -224,6 +225,9 @@ namespace HashtagHelp.Services.Implementations
                 var exists = _dataRepository.DoesHashtagExist(requiredHashtagText);
                 if (exists)
                 {
+                    _funnelServiceInfo.IsRequestToHashtagParser = "false";
+                    _dataRepository.UpdateFunnelServiceInfo(_funnelServiceInfo); // если фуннел сервайс инфо не нал
+                    await _dataRepository.SaveChangesAsync();
                     hashtag = await _dataRepository.GetEntityByFieldValueAsync<HashtagEntity>(
                         _hashtagEntityAdress, "Name", requiredHashtagText);
                     hashtagInfo.id = hashtag.InstagramId;
@@ -233,8 +237,15 @@ namespace HashtagHelp.Services.Implementations
                 }
                 else
                 {
+                    _funnelServiceInfo.IsRequestToHashtagParser = "true";
+                    _dataRepository.UpdateFunnelServiceInfo(_funnelServiceInfo);
+                    await _dataRepository.SaveChangesAsync();
                     hashtagInfo = await _hashtagApiRequestService.GetHashtagInfoAsync(hashtagApiKey, requiredHashtagText);
+                    _funnelServiceInfo.IsRequestToHashtagParser = "false";
+                    _dataRepository.UpdateFunnelServiceInfo(_funnelServiceInfo);
+                    await _dataRepository.SaveChangesAsync();
                     return hashtagInfo;
+                    
                 }
             }
             catch (Exception ex)
@@ -321,10 +332,14 @@ namespace HashtagHelp.Services.Implementations
             {
                 var tagsTaskContent = string.Join('\n', await _googleApiRequestService.GetUserParsedContentAsync());
                 var tagFreq = _parserDataService.RedoFiles(tagsTaskContent);
+
+                _funnelServiceInfo.ParsedHashtagNumber = tagFreq.Count.ToString();
+
                 ValidateTagFreq(tagFreq); // переписать метод для гугл таблиц пользователя?
                 tagFreq = _parserDataService.RareFreqTagsRemove(tagFreq, minFollowerTagsCount, minTagFollowersNumber);
                 ValidateTagFreq(tagFreq);
-                var parsedHashtagEntities = await ProcessHashtagsAsync(tagFreq);
+                
+                _funnelServiceInfo.FilteredHashtagNumber = tagFreq.Count.ToString();
 
                 var areaHashtagsString = string.Join('\n', await _googleApiRequestService.GetUserAreaHashtagsAsync());
                 var areaHashtags = _parserDataService.RedoFiles(areaHashtagsString).Keys.ToList();
@@ -340,6 +355,14 @@ namespace HashtagHelp.Services.Implementations
                     .Select(word => word.TrimStart('#').Trim())
                     .Where(word => !ContainsWrongSymbols(word))
                     .ToList();
+
+                _funnelServiceInfo.AreaHashtagNumber = areaHashtags.Count.ToString();
+                _funnelServiceInfo.SemiAreaHashtagNumber = semiAreaHashtags.Count.ToString();
+                _dataRepository.UpdateFunnelServiceInfo(_funnelServiceInfo);
+                await _dataRepository.SaveChangesAsync();
+
+                var parsedHashtagEntities = await ProcessHashtagsAsync(tagFreq);
+
                 var areaHashtagsEntities = await ProcessHashtagsAsync(areaHashtags
                     .GroupBy(x => x)
                     .ToDictionary(group => group.Key, group => 50));
@@ -349,6 +372,10 @@ namespace HashtagHelp.Services.Implementations
                 var funnel = new FunnelEntity(minTagMediaCount, maxTagMediaCount, minMediaCountInterval, hashtagsNumber, parsedHashtagEntities, areaHashtagsEntities, semiAreaHashtagEntities);
                 var funelLines = _parserDataService.CreateFunnels(funnel);
                 await _googleApiRequestService.PublicListAsync(funelLines);
+                _funnelServiceInfo.Status = "Completed";
+                _dataRepository.UpdateFunnelServiceInfo(_funnelServiceInfo);
+                await _dataRepository.SaveChangesAsync();
+                //_dataRepository.DeleteFunnelServiceInfo(_funnelServiceInfo); //читстить их в  Hosted Service?
                 _funnelCompletionSource.SetResult(true);
             }
             catch (Exception ex)
@@ -388,6 +415,8 @@ namespace HashtagHelp.Services.Implementations
 
             foreach (var tag in tagFreq)
             {
+                _funnelServiceInfo.Hashtag = tag.Key;
+
                 var hashtagInfo = await GetHashtagInfoAsync(tag.Key);
                 var hashtagEntity = new HashtagEntity
                 {
@@ -396,6 +425,9 @@ namespace HashtagHelp.Services.Implementations
                     InstagramId = hashtagInfo.id
                 };
                 hashtags.Add(hashtagEntity);
+                hashtagsReadyNumber ++;
+                _funnelServiceInfo.HashtagsReadyNumber = hashtagsReadyNumber.ToString();
+                _dataRepository.UpdateFunnelServiceInfo(_funnelServiceInfo);
                 await SaveHashtagAsync(hashtagEntity);
             }
             return hashtags;

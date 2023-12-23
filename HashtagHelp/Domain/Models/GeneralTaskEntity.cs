@@ -17,7 +17,7 @@ namespace HashtagHelp.Domain.Models
         [Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
         public StatusTaskEnum Status { get; set; } = StatusTaskEnum.Initiated;
 
-        public string ErrorInfo { get; set; } = string.Empty; // новое
+        public string ErrorInfo { get; set; } = string.Empty;
         public UserEntity? User { get; set; }
 
         public ParserTaskEntity? CollectionTask { get; set; }

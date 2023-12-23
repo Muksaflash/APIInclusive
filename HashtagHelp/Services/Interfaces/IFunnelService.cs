@@ -9,7 +9,7 @@ namespace HashtagHelp.Services.Interfaces
 
         Task SetConfigureAsync(GeneralTaskEntity generalTask);
 
-        Task SetGoogleSheetsFunnelConfigureAsync(GoogleSheetsFunnelTaskEntity googleSheetsFunnelTask);
+        Task SetGoogleSheetsFunnelConfigureAsync(GoogleSheetsFunnelTaskEntity googleSheetsFunnelTask, FunnelServiceInfoEntity funnelServiceInfo);
 
         Task WaitCompletionGeneralTaskAsync();
     }

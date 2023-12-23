@@ -6,7 +6,13 @@ namespace HashtagHelp.Services.Interfaces
     {
         void AddGeneralTask(GeneralTaskEntity generalTask);
 
+        void AddFunnelServiceInfo(FunnelServiceInfoEntity funnelServiceInfo);
+
         void UpdateGeneralTask(GeneralTaskEntity generalTask);
+
+        void UpdateFunnelServiceInfo(FunnelServiceInfoEntity funnelServiceInfo);
+
+        void DeleteFunnelServiceInfo(FunnelServiceInfoEntity funnelServiceInfo);
         
         void AddParserTask(ParserTaskEntity task);
 
@@ -35,5 +41,7 @@ namespace HashtagHelp.Services.Interfaces
         IQueryable<GeneralTaskEntity> GetGeneralTaskEntities();
 
         GeneralTaskEntity GetGeneralTaskEntityById(string generalTaskId);
+
+        FunnelServiceInfoEntity GetFunnelServiceInfoEntityById(string FunnelServiceInfoId);
     }
 }

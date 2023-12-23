@@ -98,7 +98,7 @@ namespace HashtagHelp.Services.Implementations
                             if (item.Key >= nextBound - 200 && item.Value.Count != 0)
                             {
                                 //var hashtagString = $"#{item.Value[0]}" + " " + $"{item.Key}" +" "+ $"{part} \n";
-                                var hashtagString = $"#{item.Value[0]}\n";
+                                var hashtagString = $"#{item.Value[0]}";
                                 hashtagsLines.Add(hashtagString);
                                 item.Value.RemoveAt(0);
                                 //nextBound = item.Key + freqStep;
