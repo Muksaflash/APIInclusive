@@ -6,8 +6,33 @@ using HashtagHelp.Services.Implementations.InstaParser;
 using HashtagHelp.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Converters;
+using HashtagHelp.Domain.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<JWTSettings>(builder.Configuration.GetSection("JWTSettings"));
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration.GetSection("JWTSettings:Issuer").Value,
+            ValidAudience = builder.Configuration.GetSection("JWTSettings:Audience").Value,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("JWTSettings:SecretKey").Value))
+        };
+    });
 
 builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
@@ -53,6 +78,11 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
+app.UseAuthentication();
+
 app.MapControllers();
 
 app.Run();
+
+
+

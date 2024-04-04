@@ -1,4 +1,5 @@
 ﻿using HashtagHelp.Domain.Models;
+using Microsoft.AspNet.Identity.EntityFramework;
 using Microsoft.EntityFrameworkCore;
 
 namespace HashtagHelp.DAL
@@ -14,10 +15,10 @@ namespace HashtagHelp.DAL
         public DbSet<FollowerEntity> Followers { get; set; } = null!;
         public DbSet<HashtagEntity> Hashtags { get; set; } = null!;
         public DbSet<ResearchedUserEntity> ResearchedUsers { get; set; } = null!;
-        //public DbSet<FunnelEntity> Funnels { get; set; } = null!;
         public DbSet<ParserTaskEntity> Tasks { get; set; } = null!;
         public DbSet<GeneralTaskEntity> GeneralTasks { get; set; } = null!;
         public DbSet<UserEntity> Users { get; set; } = null!;
+        public DbSet<FunnelServiceInfoEntity> FunnelServiceInfos { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

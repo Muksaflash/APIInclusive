@@ -58,10 +58,10 @@ namespace HashtagHelp.Controllers
                 }
 
                 _funnelServiceInfo = new FunnelServiceInfoEntity();
-
-                if (!Guid.TryParse(requestData.Id, out var guidResult))
+                Guid guidResult = Guid.NewGuid();/* 
+                if (!Guid.TryParse(requestData.Id, out guidResult))
                     throw new Exception("Id cannot represents a globally unique identifier (GUID)");
-                _funnelServiceInfo.Id = guidResult;
+ */                _funnelServiceInfo.Id = guidResult;
                 _dataRepository.AddFunnelServiceInfo(_funnelServiceInfo);
                 await _dataRepository.SaveChangesAsync();
 
@@ -109,49 +109,8 @@ namespace HashtagHelp.Controllers
             return Ok(result);
         }
 
-        [HttpPost("{id}")]
-        public async Task<ActionResult<string>> ResumeTaskById([FromBody] string taskId)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-                if (_context.ResearchedUsers == null)
-                    return Problem("Entity set 'AppDbContext.ResearchedUsers' is null.");
-                _generalTask = _dataRepository.GetGeneralTaskEntityById(taskId);
-                await _funnelCreatorService.SetConfigureAsync(_generalTask);
-                await _dataRepository.CheckAndDeleteOldRecordsAsync();
-                await _funnelCreatorService.StartTaskChainAsync();
-                await _funnelCreatorService.WaitCompletionGeneralTaskAsync();
-                var funnelText = _generalTask.HashtagFunnel.FunnelText;
-                return Ok(funnelText);
-            }
-            catch (Exception ex)
-            {
-                _processLogger.Log(ex.ToString());
-                if (_generalTask != null)
-                {
-                    _generalTask.ErrorInfo = ex.Message;
-                    _dataRepository.UpdateGeneralTask(_generalTask);
-                    await _dataRepository.SaveChangesAsync();
-                }
-                if (ex.Message == "paid subscription only")
-                {
-                    return Problem("InstaParser or ParserIm is not paid.");
-                }
-                return Problem(ex.Message);
-            }
-        }
-
-        /// <summary>
-        ///  Init
-        /// </summary>
-        /// <param name="requestData">kjp</param>
-        /// <returns>www</returns>
         [HttpPost]
-        public async Task<ActionResult<string>> PostFunnelRequest([FromBody] FunnelRequestModel requestData)
+        public async Task<ActionResult<string>> InitiateFunnelTask([FromBody] FunnelRequestModel requestData)
         {
             try
             {
